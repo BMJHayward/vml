@@ -1,5 +1,6 @@
 module kmean
 
+import arrays
 import rand
 
 pub fn name() string {
@@ -8,6 +9,7 @@ pub fn name() string {
 
 struct KMeansModel {
     optimum_clusters i8
+	centroids [][]f64
 }
 
 /*
@@ -27,8 +29,23 @@ TODO: implement convervgence measure, gradient descent etc to stop training
 */
 pub fn (m KMeansModel) train<T>(inputs [][]T, output []T) []KMeansModel{
 	mut lm := []KMeansModel{len: inputs.len}
+	default_clusters := 4
+    omax := arrays.max(output) or { 0 }
+	omin := arrays.min(output) or { 0 }
+	orange := omax - omin
+	ostep := orange / default_clusters
+	o1 := omin + ostep
+	o2 := omin + 3 * ostep
 	for inp in inputs {
-		lm << KMeansModel{ optimum_clusters: i8(inp.len / 4) }
+        imax := arrays.max(inp) or { 0 }
+		imin := arrays.min(inp) or { 0 }
+		irange := imax - imin
+		istep := irange / default_clusters
+		i1 := imin + istep
+		i2 := imin + 3 * istep
+		centroids := [[i1, o1], [i1, o2],
+		[i2, o1], [i2, o2]]
+		lm << KMeansModel{ optimum_clusters: i8(inp.len / default_clusters), centroids: centroids }
 	}
 	return lm
 }
