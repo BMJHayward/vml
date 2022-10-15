@@ -20,6 +20,9 @@ fn main() {
     println('Loaded: $reinf.name()')
     println('Loaded: $tree.name()')
 
-    trc := linreg.run()
-    println('RUN: linreg: $trc')
+    lrr := linreg.run()
+    println('RUN: linreg: $lrr')
+    kmr := kmean.run()
+    println('RUN: kmeans: $kmr')
+    println('DONE')
 }
