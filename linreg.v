@@ -82,7 +82,7 @@ pub fn plot() {
 }
 */
 
-pub fn run() []LinearModel {
+pub fn demo() []LinearModel {
 	mut test_x1 := []f64{}
 	mut test_x2 := []f64{}
 	mut test_y := []f64{}

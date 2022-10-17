@@ -3,6 +3,7 @@ module kmean
 import arrays
 import math
 import rand
+import rand.config
 
 pub fn name() string {
 	return 'kmeans clustering'
@@ -21,6 +22,18 @@ fn point_distance<T>(pta []T, ptb []T) f64 {
 	return pd
 }
 
+// random_point gives a random [x, y] in the given range
+fn random_point(min_x f64, min_y f64, max_x f64, max_y f64) []f64 {
+    rand_x := rand.f64_in_range(min_x, max_x) or { 0 }
+    rand_y := rand.f64_in_range(min_y, max_y) or { 0 }
+	return [rand_x, rand_y]
+}
+
+fn calc_opt_clusters() int {
+	println('calculate clusters')
+	return 4
+}
+
 /*
 train and predict will make a common API amongst as many model types as possible
 K-Means clustering
@@ -37,24 +50,21 @@ TODO: implement convervgence measure, gradient descent etc to stop training
 6. done
 // TODO: elbow method vs silhouette score vs hierarchical clustering to determine optimum clusters
 */
-pub fn (m KMeansModel) train<T>(inputs [][]T, output []T, iterations int) []KMeansModel {
+pub fn (m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, clusters int) []KMeansModel {
 	mut km := []KMeansModel{len: inputs.len}
-	default_clusters := 4
 	omax := arrays.max(output) or { 0 }
 	omin := arrays.min(output) or { 0 }
-	orange := omax - omin
-	ostep := orange / default_clusters
-	o1 := omin + ostep
-	o2 := omin + 3 * ostep
 
 	for inp in inputs {
 		imax := arrays.max(inp) or { 0 }
 		imin := arrays.min(inp) or { 0 }
-		irange := imax - imin
-		istep := irange / default_clusters
-		i1 := imin + istep
-		i2 := imin + 3 * istep
-		mut centroids := [[i1, o1], [i1, o2], [i2, o1], [i2, o2]]
+		mut centroids := [][]f64{}
+		for pt in 0 .. clusters {
+			if pt < 0 {
+				panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
+			}
+			centroids << random_point(imin, omin, imax, omax)
+		}
 		println('PHASES TO RUN: $iterations')
 		for phase in 0 .. iterations {
 			if phase < 0 {
@@ -80,31 +90,45 @@ pub fn (m KMeansModel) train<T>(inputs [][]T, output []T, iterations int) []KMea
 		}
 		println('PHASES RUN: $iterations')
 		km << KMeansModel{
-			optimum_clusters: i8(inp.len / default_clusters)
+			optimum_clusters: i8(clusters)
 			centroids: centroids
 		}
 	}
 	return km
 }
 
-pub fn (m KMeansModel) predict<T>(data []T) []T {
-	println('DATA: $data')
+// predict takes a point as a 2-list and returns the index of the centroid it belongs to
+// TODO: set whether this func updates the model or not
+// if it does update the model, need to keep the count of clusters assigned to it and update
+// using arithmetic mean
+pub fn (m KMeansModel) predict<T>(data [][]T) []T {
+	mut closest_cluster := []T{}
+	for d in data {
+		closest_cluster << arrays.idx_min(m.centroids.map(point_distance(it, d)))
+	}
+	return closest_cluster
 }
 
-pub fn run() []KMeansModel {
+fn decile<T>( num T) T {
+    return math.ceil(num / 10.0)
+}
+
+pub fn demo() []KMeansModel {
 	mut test_x1 := []f64{}
 	mut test_x2 := []f64{}
 	mut test_y := []f64{}
+
 	for i := 0; i < 100; i++ {
 		test_x1 << f64(i)
-		test_x2 << f64(2 * i)
-		test_y << 3 * (i + rand.int_in_range(-1, 1) or { 0 })
+		tx2, ty := rand.normal_pair(config.NormalConfigStruct{mu: decile(f64(i)), sigma: 2.0}) or { 50.0, 1.0 }
+		test_x2 << tx2
+		test_y  << ty
 	}
+
 	km_runner := KMeansModel{
 		optimum_clusters: 1
 	}
-	{
-	}
-	km_model := km_runner.train([test_x1, test_x2], test_y, 1000)
+
+	km_model := km_runner.train([test_x1, test_x2], test_y, 100, 4)
 	return km_model
 }
