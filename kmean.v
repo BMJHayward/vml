@@ -61,6 +61,9 @@ pub fn (mut m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, cl
 		imax := arrays.max(inp) or { 0 }
 		imin := arrays.min(inp) or { 0 }
 		mut centroids := [][]f64{}
+		mut diameters := []f64{}
+		mut pairs := [][][]f64{} // add extra element at end for junk
+		mut point_counts := []int{}
 		for pt in 0 .. clusters {
 			if pt < 0 {
 				panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
@@ -68,10 +71,14 @@ pub fn (mut m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, cl
 			centroids << random_point(imin, omin, imax, omax)
 		}
 		for phase in 0 .. iterations {
+			diameters.clear()
+			pairs.clear()
+			for i := 0; i < centroids.len; i++ {
+				pairs << [][]f64{}
+			}
 			if phase < 0 {
 			panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
 			}
-			mut pairs := [][][]f64{len: centroids.len + 1} // add extra element at end for junk
 			for idx, iv in inp {
 				mut pr := []f64{len: 2}
 				pr = [iv, output[idx]]
@@ -89,20 +96,19 @@ pub fn (mut m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, cl
 				centroids[cdx] = newcntr
 			}
 			// calculate distortion for each cluster
-			mut diameters := []T{}
-			// for pdx, pr in pairs {
-			for pdx in 0 .. pairs.len - 1 {
-				// m.point_count[pdx] = pr.len
+			for pdx in 0 .. centroids.len {
                 mut dists := pairs[pdx].map(point_distance(it, centroids[pdx]))
 				diameters << arrays.reduce(dists, fn<T> (cur T, nex T) T{
 					return math.sqrt(cur * cur + nex * nex)
 				}) or { 0 }
-				m.distances[pdx] = diameters
 			}
 		}
+		point_counts << pairs.map(it.len)
 		km << KMeansModel{
 			optimum_clusters: i8(clusters)
 			centroids: centroids
+			distances: diameters
+			point_count: point_counts
 		}
 	}
 	return km
