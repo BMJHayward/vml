@@ -12,6 +12,9 @@ pub fn name() string {
 struct KMeansModel {
 	optimum_clusters i8
 	centroids        [][]f64
+	mut:
+	distances   []f64
+	point_count []int
 }
 
 // point_distance calculates euclidian distance between 2 points of [x,y] and [x,y], returns f64
@@ -30,7 +33,6 @@ fn random_point(min_x f64, min_y f64, max_x f64, max_y f64) []f64 {
 }
 
 fn calc_opt_clusters() int {
-	println('calculate clusters')
 	return 4
 }
 
@@ -50,8 +52,8 @@ TODO: implement convervgence measure, gradient descent etc to stop training
 6. done
 // TODO: elbow method vs silhouette score vs hierarchical clustering to determine optimum clusters
 */
-pub fn (m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, clusters int) []KMeansModel {
-	mut km := []KMeansModel{len: inputs.len}
+pub fn (mut m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, clusters int) []KMeansModel {
+	mut km := []KMeansModel{}
 	omax := arrays.max(output) or { 0 }
 	omin := arrays.min(output) or { 0 }
 
@@ -65,7 +67,6 @@ pub fn (m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, cluste
 			}
 			centroids << random_point(imin, omin, imax, omax)
 		}
-		println('PHASES TO RUN: $iterations')
 		for phase in 0 .. iterations {
 			if phase < 0 {
 			panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
@@ -87,8 +88,18 @@ pub fn (m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, cluste
 				}) or { cntr }
 				centroids[cdx] = newcntr
 			}
+			// calculate distortion for each cluster
+			mut diameters := []T{}
+			// for pdx, pr in pairs {
+			for pdx in 0 .. pairs.len - 1 {
+				// m.point_count[pdx] = pr.len
+                mut dists := pairs[pdx].map(point_distance(it, centroids[pdx]))
+				diameters << arrays.reduce(dists, fn<T> (cur T, nex T) T{
+					return math.sqrt(cur * cur + nex * nex)
+				}) or { 0 }
+				m.distances[pdx] = diameters
+			}
 		}
-		println('PHASES RUN: $iterations')
 		km << KMeansModel{
 			optimum_clusters: i8(clusters)
 			centroids: centroids
@@ -125,10 +136,10 @@ pub fn demo() []KMeansModel {
 		test_y  << ty
 	}
 
-	km_runner := KMeansModel{
+	mut km_runner := KMeansModel{
 		optimum_clusters: 1
 	}
 
-	km_model := km_runner.train([test_x1, test_x2], test_y, 100, 4)
+	mut km_model := km_runner.train([test_x1, test_x2], test_y, 100, 4)
 	return km_model
 }
