@@ -2,6 +2,7 @@ module kmean
 
 import arrays
 import math
+import math.stats
 import rand
 import rand.config
 
@@ -9,10 +10,10 @@ pub fn name() string {
 	return 'kmeans clustering'
 }
 
-struct KMeansModel {
+pub struct KMeansModel {
 	optimum_clusters i8
 	centroids        [][]f64
-	mut:
+mut:
 	distances   []f64
 	point_count []int
 }
@@ -27,8 +28,8 @@ fn point_distance<T>(pta []T, ptb []T) f64 {
 
 // random_point gives a random [x, y] in the given range
 fn random_point(min_x f64, min_y f64, max_x f64, max_y f64) []f64 {
-    rand_x := rand.f64_in_range(min_x, max_x) or { 0 }
-    rand_y := rand.f64_in_range(min_y, max_y) or { 0 }
+	rand_x := rand.f64_in_range(min_x, max_x) or { 0 }
+	rand_y := rand.f64_in_range(min_y, max_y) or { 0 }
 	return [rand_x, rand_y]
 }
 
@@ -53,6 +54,9 @@ TODO: implement convervgence measure, gradient descent etc to stop training
 // TODO: elbow method vs silhouette score vs hierarchical clustering to determine optimum clusters
 */
 pub fn (mut m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, clusters int) []KMeansModel {
+	if clusters < 1 {
+		panic('argument clusters must be > 0, you gave $clusters')
+	}
 	mut km := []KMeansModel{}
 	omax := arrays.max(output) or { 0 }
 	omin := arrays.min(output) or { 0 }
@@ -77,7 +81,7 @@ pub fn (mut m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, cl
 				pairs << [][]f64{}
 			}
 			if phase < 0 {
-			panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
+				panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
 			}
 			for idx, iv in inp {
 				mut pr := []f64{len: 2}
@@ -97,8 +101,8 @@ pub fn (mut m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, cl
 			}
 			// calculate distortion for each cluster
 			for pdx in 0 .. centroids.len {
-                mut dists := pairs[pdx].map(point_distance(it, centroids[pdx]))
-				diameters << arrays.reduce(dists, fn<T> (cur T, nex T) T{
+				mut dists := pairs[pdx].map(point_distance(it, centroids[pdx]))
+				diameters << arrays.reduce(dists, fn <T>(cur T, nex T) T {
 					return math.sqrt(cur * cur + nex * nex)
 				}) or { 0 }
 			}
@@ -126,26 +130,45 @@ pub fn (m KMeansModel) predict<T>(data [][]T) []T {
 	return closest_cluster
 }
 
-fn decile<T>( num T) T {
-    return math.ceil(num / 10.0)
+fn decile<T>(num T) T {
+	return math.ceil(num / 10.0)
 }
 
-pub fn demo() []KMeansModel {
+pub fn demo() ![]KMeansModel {
 	mut test_x1 := []f64{}
 	mut test_x2 := []f64{}
 	mut test_y := []f64{}
 
 	for i := 0; i < 100; i++ {
 		test_x1 << f64(i)
-		tx2, ty := rand.normal_pair(config.NormalConfigStruct{mu: decile(f64(i)), sigma: 2.0}) or { 50.0, 1.0 }
+		tx2, ty := rand.normal_pair(config.NormalConfigStruct{ mu: decile(f64(i)), sigma: 2.0 }) or {
+			50.0, 1.0
+		}
 		test_x2 << tx2
-		test_y  << ty
+		test_y << ty
 	}
 
 	mut km_runner := KMeansModel{
 		optimum_clusters: 1
 	}
 
-	mut km_model := km_runner.train([test_x1, test_x2], test_y, 100, 4)
+	mut ds := []f64{}
+	for cl in 1 .. 11 {
+		mut opt_model := km_runner.train([test_x2], test_y, 100, cl)
+		ds << stats.mean(opt_model[0].distances)
+	}
+	println('average cluster sizes for each run:')
+	println(ds.map(math.round_sig(it, 2)))
+	// secondDerivative[i] = x[i+1] + x[i-1] - 2 * x[i]
+	mut d2 := []f64{}
+	for d := 1; d < ds.len - 1; d++ {
+		d2 << ds[d + 1] + ds[d - 1] - 2 * ds[d]
+	}
+	println('second derivative')
+	println(d2.map(math.round_sig(it, 2)))
+	d2.prepend(0) // prepend so that clusters is at least 1, not 0
+	opt_clusters := arrays.idx_max(d2.map(math.abs(it))) or { 1 }
+
+	mut km_model := km_runner.train([test_x1, test_x2], test_y, 100, opt_clusters)
 	return km_model
 }
