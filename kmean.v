@@ -11,11 +11,11 @@ pub fn name() string {
 }
 
 pub struct KMeansModel {
+mut:
 	optimum_clusters i8
 	centroids        [][]f64
-mut:
-	distances   []f64
-	point_count []int
+	distances        []f64
+	point_count      []int
 }
 
 // point_distance calculates euclidian distance between 2 points of [x,y] and [x,y], returns f64
@@ -114,6 +114,13 @@ pub fn (mut m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, cl
 			distances: diameters
 			point_count: point_counts
 		}
+		/*
+		if update {
+			m.point_count[closest_cluster.last()]++
+			m.centroids[closest_cluster.last()] = ((
+				f64(m.point_count[closest_cluster.last()]) * m.centroids[closest_cluster.last()] + d)
+				/ m.point_count[closest_cluster.last()])
+		}*/
 	}
 	return km
 }
@@ -122,30 +129,43 @@ pub fn (mut m KMeansModel) train<T>(inputs [][]T, output []T, iterations int, cl
 // TODO: set whether this func updates the model or not
 // if it does update the model, need to keep the count of clusters assigned to it and update
 // using arithmetic mean
-pub fn (m KMeansModel) predict<T>(data [][]T) []T {
-	mut closest_cluster := []T{}
+pub fn (mut m KMeansModel) predict<T>(data [][]T) ![]int {
+	mut closest_cluster := []int{}
 	for d in data {
-		closest_cluster << arrays.idx_min(m.centroids.map(point_distance(it, d)))
+		closest_cluster << arrays.idx_min(m.centroids.map(point_distance(it, d)))!
 	}
 	return closest_cluster
 }
 
 fn decile<T>(num T) T {
-	return math.ceil(num / 10.0)
+	return math.ceil(num / 10.0) * 10
 }
 
 pub fn demo() ![]KMeansModel {
 	mut test_x1 := []f64{}
 	mut test_x2 := []f64{}
 	mut test_y := []f64{}
+	mut valx := []f64{}
+	mut valy := []f64{}
 
 	for i := 0; i < 100; i++ {
-		test_x1 << f64(i)
-		tx2, ty := rand.normal_pair(config.NormalConfigStruct{ mu: decile(f64(i)), sigma: 2.0 }) or {
+		tx0 := rand.normal(config.NormalConfigStruct{ mu: 50, sigma: 1.0 }) or { 50.0 }
+		tx1, ty1 := rand.normal_pair(config.NormalConfigStruct{ mu: 25, sigma: 1.0 }) or {
+			25.0, 25.0
+		}
+		tx2, ty2 := rand.normal_pair(config.NormalConfigStruct{ mu: 75, sigma: 1.0 }) or {
+			75.0, 75.0
+		}
+		vx, vy := rand.normal_pair(config.NormalConfigStruct{ mu: decile(f64(i)), sigma: 1.0 }) or {
 			50.0, 1.0
 		}
+		test_x1 << tx0
+		test_x2 << tx1
 		test_x2 << tx2
-		test_y << ty
+		test_y << ty1
+		test_y << ty2
+		valx << vx
+		valy << vy
 	}
 
 	mut km_runner := KMeansModel{
@@ -157,18 +177,21 @@ pub fn demo() ![]KMeansModel {
 		mut opt_model := km_runner.train([test_x2], test_y, 100, cl)
 		ds << stats.mean(opt_model[0].distances)
 	}
-	println('average cluster sizes for each run:')
-	println(ds.map(math.round_sig(it, 2)))
-	// secondDerivative[i] = x[i+1] + x[i-1] - 2 * x[i]
+	// calculate secondDerivative[i] = x[i+1] + x[i-1] - 2 * x[i]
 	mut d2 := []f64{}
 	for d := 1; d < ds.len - 1; d++ {
 		d2 << ds[d + 1] + ds[d - 1] - 2 * ds[d]
 	}
-	println('second derivative')
-	println(d2.map(math.round_sig(it, 2)))
+	d2.prepend(0) // prepend so that clusters is at least 1, not 0
 	d2.prepend(0) // prepend so that clusters is at least 1, not 0
 	opt_clusters := arrays.idx_max(d2.map(math.abs(it))) or { 1 }
 
 	mut km_model := km_runner.train([test_x1, test_x2], test_y, 100, opt_clusters)
+	mut validations := [][]f64{}
+	for i in 0 .. valx.len {
+		validations << [valx[i], valy[i]]
+	}
+	println('KMEANS PREDICTIONS:')
+	println(km_model[1].predict(validations) or { [-1] })
 	return km_model
 }

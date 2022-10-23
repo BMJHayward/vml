@@ -22,7 +22,7 @@ fn main() {
 
     lrr := linreg.demo()
     println('RUN: linreg: $lrr')
-    kmr := kmean.demo()
+    kmr := kmean.demo() or { []kmean.KMeansModel{} }
     println('RUN: kmeans: $kmr')
     println('DONE')
 }
