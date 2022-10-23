@@ -24,5 +24,7 @@ fn main() {
     println('RUN: linreg: $lrr')
     kmr := kmean.demo() or { []kmean.KMeansModel{} }
     println('RUN: kmeans: $kmr')
+    nnd := nnet.demo() or { []nnet.NeuralNetModel{} }
+    println('RUN: neural net: $nnd')
     println('DONE')
 }
