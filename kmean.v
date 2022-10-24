@@ -118,20 +118,15 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 		}
 	}
 	point_counts << pairs.map(it.len)
+	for pc in 0 .. arrays.min([point_counts.len, m.point_count.len]) or { centroids.len } {
+		point_counts[pc] += m.point_count[pc]
+	}
 	km = KMeansModel{
 		optimum_clusters: int(clusters)
 		centroids: centroids
 		distances: diameters
-		point_count: m.point_count + point_counts
+		point_count: point_counts
 	}
-	/*
-	TODO: incorporate this logic _nicely_
-		if update {
-			m.point_count[closest_cluster.last()]++
-			m.centroids[closest_cluster.last()] = ((
-				f64(m.point_count[closest_cluster.last()]) * m.centroids[closest_cluster.last()] + d)
-				/ m.point_count[closest_cluster.last()])
-		}*/
 	return km
 }
 
