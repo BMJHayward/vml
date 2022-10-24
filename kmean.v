@@ -12,7 +12,7 @@ pub fn name() string {
 
 pub struct KMeansModel {
 mut:
-	optimum_clusters i8
+	optimum_clusters int
 	centroids        [][]f64
 	distances        []f64
 	point_count      []int
@@ -50,27 +50,39 @@ TODO: implement convervgence measure, gradient descent etc to stop training
 5. foreach cluster j1, j2, ... jk:
   - update centroid -> mean of all points currently in cluster
 6. done
+This function will work on a new model or an existing, already trained model.
+If training an existing model, the centroids and point counts will be updated, where as the cluster size and count will be replaced.
+If you give this model new data which is clustered much the same as the data it was trained with, it will remain "in line" or equivalent.
 // TODO: generalise this function to create new model or update existing model i.e. update `(mut m KMeansModel)`
 */
 pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, clusters int) KMeansModel {
 	if clusters < 1 {
 		panic('argument clusters must be > 0, you gave $clusters')
 	}
+	m.optimum_clusters = clusters
 	mut km := KMeansModel{}
 	omax := arrays.max(output) or { 0 }
 	omin := arrays.min(output) or { 0 }
 
 	imax := arrays.max(inp) or { 0 }
 	imin := arrays.min(inp) or { 0 }
-	mut centroids := [][]f64{}
 	mut diameters := []f64{}
 	mut pairs := [][][]f64{} // add extra element at end for junk
 	mut point_counts := []int{}
-	for pt in 0 .. clusters {
-		if pt < 0 {
-			panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
+	mut centroids := [][]f64{}
+	match m.centroids.len {
+        0 {
+			centroids = [][]f64{}
+			for pt in 0 .. m.optimum_clusters {
+				if pt < 0 {
+					panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
+				}
+				centroids << random_point(imin, omin, imax, omax)
+			}
 		}
-		centroids << random_point(imin, omin, imax, omax)
+		else {
+			centroids = m.centroids.clone()
+		}
 	}
 	for phase in 0 .. iterations {
 		diameters.clear()
@@ -107,10 +119,10 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 	}
 	point_counts << pairs.map(it.len)
 	km = KMeansModel{
-		optimum_clusters: i8(clusters)
+		optimum_clusters: int(clusters)
 		centroids: centroids
 		distances: diameters
-		point_count: point_counts
+		point_count: m.point_count + point_counts
 	}
 	/*
 	TODO: incorporate this logic _nicely_
