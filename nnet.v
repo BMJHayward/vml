@@ -2,6 +2,7 @@ module nnet
 
 import arrays
 import math
+import rand
 
 pub fn name() string {
     // TODO: single layer perception
@@ -12,14 +13,48 @@ pub fn name() string {
 }
 
 type FLoatFunc = fn (f64) f64
+type ActFunc = fn ([]f64) []f64
+type ErrorFunc = fn ([]f64, []f64) []f64
 
 pub struct NeuralNetModel {
 mut:
 	shape []int
 	layers []string
-	activation  fn ([]f64) []f64
-	error       fn ([]f64, []f64) []f64
-	backprop    bool
+	activation  ActFunc
+	error       ErrorFunc
+    backprop    bool
+}
+
+pub struct Layer {
+    act_funcs struct {
+        tanh []ActFunc
+        sig []ActFunc
+    }
+    act ActFunc
+    act_d ActFunc
+    mut:
+        w [][]f64
+        learn_rate f64
+        b [][]f64
+}
+
+fn (mut l Layer) init_layer(neurons int, inputs int) {
+    for n in 0 .. neurons {
+        l.w << []f64{}
+        for _ in 0 .. inputs {
+            l.w[n] << rand.f64()
+        }
+    }
+    println('layer initialised')
+}
+
+fn dot_prod(a []f64, b []f64) f64 {
+    return arrays.sum(arrays.group<f64>(a,b).map(it[0]*it[1])) or { 0.0 }
+}
+
+// feed_fwd takes input from previous layer, computes dot product and passes to next layer
+fn (mut l Layer) feed_fwd(input []f64) []f64 {
+    return [0.0]
 }
 
 // Activation Functions
@@ -31,6 +66,7 @@ fn tanh(x []f64) []f64 {
     return x.map(math.tanh(it))
 }
 
+// d_tanh is derivative of tanh function
 fn d_tanh(x []f64) []f64 {
     return (x.map(math.tanh(it))).map(math.pow(it, 2)).map(1 - it)
 }
@@ -39,6 +75,7 @@ fn sigmoid(x []f64) []f64 {
     return x.map(1/(1 + math.exp(-it)))
 }
 
+// d_sigmoid is derivative of sigmoid function
 fn d_sigmoid(x []f64) []f64 {
     mut sg := sigmoid(x)
     return sg.map((1 - it) * it)
