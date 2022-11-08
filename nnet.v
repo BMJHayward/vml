@@ -29,6 +29,7 @@ fn get_acts(fun string) (ActFunc, ActFunc) {
     act_funcs := {
         'tanh': [tanh, d_tanh]
         'sig': [sigmoid, d_sigmoid]
+        'relu': [relu, d_relu]
     }
     rv := act_funcs[fun]
     return rv[0], rv[1]
@@ -36,26 +37,49 @@ fn get_acts(fun string) (ActFunc, ActFunc) {
 
 pub struct Layer {
     mut:
+        inputs int
+        neurons int
+        learn_rate f64
+        act ActFunc
+        act_d ActFunc
         prev_layer [][]f64
     	z [][]f64 // the dot prod of weights and prev layer Z
         a [][]f64 // result of activation func on a
-        act ActFunc
-        act_d ActFunc
         w [][]f64
-        learn_rate f64
         b []f64
 }
 
-fn (mut l Layer) init_layer(neurons int, inputs int, func string) {
-    l.act, l.act_d = get_acts(func)
+fn init_layer(neurons int, inputs int, func string) Layer {
+    act, act_d := get_acts(func)
+    learn_rate := 0.1
+    mut w := [][]f64{}
+    mut b := []f64 {}
+    mut z := [][]f64{}
+    mut a := [][]f64{}
+    mut prev_layer := [][]f64{}
     for n in 0 .. neurons {
-        l.w << []f64{}
-        l.b << 0.0
+        w << []f64{}
+        b << 0.0
+        z << []f64{}
+        a << []f64{}
+        prev_layer << []f64{}
         for _ in 0 .. inputs {
-            l.w[n] << rand.f64()
+            w[n] << rand.f64()
         }
     }
-    println('layer initialised')
+    new_layer := Layer{
+        neurons: neurons
+        inputs: inputs
+        act: act
+        act_d: act_d
+        w: w
+        b: b
+        a: a
+        z: z
+        prev_layer: prev_layer
+    }
+    println('new layer initialised')
+    return new_layer
 }
 
 fn dot_prod(a []f64, b []f64) f64 {
@@ -140,6 +164,17 @@ fn relu(input []f64) []f64 {
     return input.map(arrays.max([0.0, it]) or { 0 })
 }
 
+fn d_relu(x []f64) []f64 {
+    return x.map(fn (w f64) f64 {
+        if w < 0.0 {
+            return 0.0
+        }
+        else {
+            return 1.0
+        }
+    })
+}
+
 fn tanh(x []f64) []f64 {
     return x.map(math.tanh(it))
 }
@@ -199,6 +234,17 @@ pub fn (mut m KMeansModel) predict<T>(data [][]T) ![]f64 {
 }
 
 pub fn demo() ![]NeuralNetModel {
+    x_train := [[0.0, 0.0, 1.0, 1.0], [0.0, 1.0, 0.0, 1.0]]
+    y_train := [0.0, 1.0, 0.0, 0.0]
+    m := 4
+    epochs := 10
+    layers := [
+        init_layer(2, 3, 'relu'),
+        init_layer(2, 3, 'tanh'),
+        init_layer(2, 3, 'sig')
+    ]
+    mut costs := []f64
+
 	return [NeuralNetModel{
         [3,3,3]
         ['relu', 'relu', 'relu']
