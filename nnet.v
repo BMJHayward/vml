@@ -195,25 +195,45 @@ fn d_sigmoid(x []f64) []f64 {
 }
 
 // Loss Functions 
-fn logloss(y []f64, a []f64) []f64 {
-    // asdf
-    ya_range := math.min(y.len, a.len)
-    alog := a.map(math.log(it))
-    alogit := a.map(math.log(1-it))
+fn logloss(y []f64, a [][]f64) []f64 {
+    // alog := a.map(math.log(it))
+    // alogit := a.map(math.log(1-it))
+    mut alog := [][]f64{}
+    mut alogit := [][]f64{}
+    for i in 0 .. a.len {
+        for j in 0 .. a[0].len {
+            alog[i][j] = math.log(a[i][j])
+            alogit[i][j] = math.log(1 - a[i][j])
+        }
+    }
+    mut one_sub_y := y.map(1-it)
     mut lgl := []f64{}
-    for i in 0 .. ya_range {
-        lgl << -1 * (y[i] * alog[i] + (1 - y[i]) * alogit[i])
+    mut lgla := alog.map(dot_prod(it, y))
+    mut lglb := alogit.map(dot_prod(it, one_sub_y))
+    for k in 0 .. y.len {
+        lgl << -1 * (lgla[k] + lglb[k])
     }
     return lgl
 }
 
-fn d_logloss(y []f64, a []f64) []f64 {
-    mut ay := []f64{len: math.min(y.len, a.len)}
-    for i in 0 .. int(math.min(y.len, a.len)) {
-        ay << a[i] - y[i]
+// d_logloss is an element-wise operation of form
+// (a - y)/(a*(1 - a))
+fn d_logloss(y []f64, a [][]f64) [][]f64 {
+    mut bot_a := a.clone()
+    for i in 0 .. a.len {
+        for j in 0 .. a[0].len {
+            bot_a[i][j] = a[i][j] * (1 - a[i][j])
+        }
     }
-    mut ll := a.map(it*(1 - it))
-    return arrays.group<f64>(ay, ll).map(it[0] / it[1])
+    // a.map(it - y)
+    mut top_a := a.clone()
+    for k in 0 .. a.len {
+        for l in 0 .. y.len {
+            top_a[k][l] -= y[l]
+            top_a[k][l] /= bot_a[k][l]
+        }
+    }
+    return top_a
 }
 
 fn mse(target []f64, actual []f64) []f64 {
@@ -238,12 +258,28 @@ pub fn demo() ![]NeuralNetModel {
     y_train := [0.0, 1.0, 0.0, 0.0]
     m := 4
     epochs := 10
-    layers := [
+    mut layers := [
         init_layer(2, 3, 'relu'),
         init_layer(2, 3, 'tanh'),
         init_layer(2, 3, 'sig')
     ]
-    mut costs := []f64
+    mut costs := []f64{}
+
+    for _ in 0 .. epochs {
+      // train by feedforward
+      mut a := x_train.clone()
+      for mut l in layers {
+        a = l.feed_fwd(a)
+      }
+      // keep track of costs to plot
+      costs << 1/m * arrays.sum(logloss(y_train, a)) or { 1.0 }
+
+      // perform backpropagation
+      mut da := d_logloss(y_train, a)
+      for mut l in layers.reverse() {
+        da = l.back_prop(da)
+      }
+    }
 
 	return [NeuralNetModel{
         [3,3,3]
