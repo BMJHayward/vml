@@ -72,6 +72,7 @@ fn init_layer(neurons int, inputs int, func string) Layer {
         inputs: inputs
         act: act
         act_d: act_d
+        learn_rate: learn_rate
         w: w
         b: b
         a: a
@@ -87,7 +88,19 @@ fn dot_prod(a []f64, b []f64) f64 {
 }
 
 fn mat_mul(a [][]f64, b [][]f64) [][]f64 {
+    println('mat mul a')
+    println(a)
+    println('mat mul b')
+    println(b)
     if a[0].len != b.len {
+        println('args have incompatible dimensions')
+        println('arg a has ${a.len} rows and ${a[0].len} columns, b has ${b.len} rows and ${b[0].len} columns')
+        println('pass in matrices with matching a-col b-row dimensions')
+        println(error)
+    } else if a.len == 0 || b.len == 0 {
+        println('matrices a and b cannot be 0 length')
+        println('length of a: ${a.len}')
+        println('length of b: ${b.len}')
         println(error)
     }
 
@@ -115,6 +128,10 @@ fn transpose(a [][]f64) [][]f64 {
 // feed_fwd takes input from previous layer, computes dot product and passes to next layer
 fn (mut l Layer) feed_fwd(prev_layer [][]f64) [][]f64 {
     l.prev_layer = prev_layer
+    println('prev layer')
+    println(prev_layer)
+    println('l.w')
+    println(l.w)
     zmm := mat_mul(l.w, l.prev_layer)
     zmmgroup := zmm.map(arrays.group<f64>(it, l.b))
     l.z = zmmgroup.map(it.map(it[0] + it[1]))
@@ -219,14 +236,14 @@ fn logloss(y []f64, a [][]f64) []f64 {
 // d_logloss is an element-wise operation of form
 // (a - y)/(a*(1 - a))
 fn d_logloss(y []f64, a [][]f64) [][]f64 {
-    mut bot_a := a.clone()
+    mut bot_a := a.map(it.clone())
     for i in 0 .. a.len {
         for j in 0 .. a[0].len {
             bot_a[i][j] = a[i][j] * (1 - a[i][j])
         }
     }
     // a.map(it - y)
-    mut top_a := a.clone()
+    mut top_a := a.map(it.clone())
     for k in 0 .. a.len {
         for l in 0 .. y.len {
             top_a[k][l] -= y[l]
@@ -259,18 +276,22 @@ pub fn demo() ![]NeuralNetModel {
     m := 4
     epochs := 10
     mut layers := [
-        init_layer(2, 3, 'relu'),
+        init_layer(2, 2, 'relu'),
         init_layer(2, 3, 'tanh'),
-        init_layer(2, 3, 'sig')
+        init_layer(3, 3, 'sig')
     ]
     mut costs := []f64{}
 
     for _ in 0 .. epochs {
       // train by feedforward
-      mut a := x_train.clone()
+      mut a := x_train.map(it.clone())
+      println('A')
+      println(a)
       for mut l in layers {
         a = l.feed_fwd(a)
       }
+      println('A')
+      println(a)
       // keep track of costs to plot
       costs << 1/m * arrays.sum(logloss(y_train, a)) or { 1.0 }
 
@@ -280,6 +301,13 @@ pub fn demo() ![]NeuralNetModel {
         da = l.back_prop(da)
       }
     }
+
+    mut demo_train := [[1.0, 1.0, 0.0, 0.0], [1.0, 0.0, 1.0, 0.0]]
+    for mut lyr in layers {
+        demo_train = lyr.feed_fwd(demo_train)
+    }
+    println('neural net prediction')
+    println(demo_train)
 
 	return [NeuralNetModel{
         [3,3,3]
