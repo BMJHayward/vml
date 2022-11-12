@@ -107,9 +107,10 @@ fn mat_mul(a [][]f64, b [][]f64) [][]f64 {
 	mut res := [][]f64{}
 
     for row in 0 .. a.len {
-        for col in 0 .. b.len {
-            for bcol in 0 .. b[col].len {
-                res[row][col] = a[row][bcol] * b[bcol][col]
+        for col in 0 .. b[0].len {
+            res[row][col] = 0.0
+            for bcol in 0 .. b.len {
+                res[row][col] += a[row][bcol] * b[bcol][col]
             }
         }
     }
