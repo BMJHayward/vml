@@ -89,6 +89,10 @@ fn dot_prod(a []f64, b []f64) f64 {
 
 fn mat_mul(a [][]f64, b [][]f64) [][]f64 {
     mut res := [][]f64{len: a.len, init: []f64{len: b[0].len}}
+    println('matmul a:')
+    println(a)
+    println('matmul b:')
+    println(b)
 
     for row in 0 .. a.len {
         for col in 0 .. b[0].len {
@@ -112,8 +116,8 @@ fn transpose(a [][]f64) [][]f64 {
 }
 // feed_fwd takes input from previous layer, computes dot product and passes to next layer
 fn (mut l Layer) feed_fwd(prev_layer [][]f64) [][]f64 {
-    l.prev_layer = prev_layer
-    zmm := mat_mul(l.w, l.prev_layer)
+    l.prev_layer = prev_layer.map(it.clone())
+    zmm := mat_mul(l.prev_layer, l.w)
     zmmgroup := zmm.map(arrays.group<f64>(it, l.b))
     l.z = zmmgroup.map(it.map(it[0] + it[1]))
     l.a = l.z.map(l.act(it)) 
@@ -223,19 +227,10 @@ fn d_logloss(y []f64, a [][]f64) [][]f64 {
             bot_a[i][j] = a[i][j] * (1 - a[i][j])
         }
     }
-    println('bot_a')
-    println(bot_a)
     // a.map(it - y)
     mut top_a := a.map(it.clone())
-    println('top_a')
-    println(top_a)
-    println('a')
-    println(a)
-    println('y')
-    println(y)
     for k in 0 .. a.len {
         for l in 0 .. y.len {
-            println(l)
             top_a[k][l] -= y[l]
             top_a[k][l] /= bot_a[k][l]
         }
@@ -266,22 +261,27 @@ pub fn demo() ![]NeuralNetModel {
     m := 4
     epochs := 10
     mut layers := [
-        init_layer(2, 2, 'relu'),
         init_layer(2, 3, 'tanh'),
-        init_layer(3, 3, 'sig')
+        init_layer(3, 1, 'sig')
     ]
     mut costs := []f64{}
 
     for _ in 0 .. epochs {
         // train by feedforward
+        println('a 270')
         mut a := x_train.map(it.clone())
+        println(a)
         for mut l in layers {
+            println('a at layer ${l}')
+            println(a)
             a = l.feed_fwd(a)
         }
       // keep track of costs to plot
       costs << 1/m * arrays.sum(logloss(y_train, a)) or { 1.0 }
 
         // perform backpropagation
+        println('a b4 d_logloss')
+        println(a)
         mut da := d_logloss(y_train, a)
         for mut l in layers.reverse() {
             da = l.back_prop(da)
