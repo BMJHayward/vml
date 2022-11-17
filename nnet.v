@@ -36,6 +36,7 @@ fn get_acts(fun string) (ActFunc, ActFunc) {
 }
 
 pub struct Layer {
+    func string
     mut:
         inputs int
         neurons int
@@ -70,6 +71,7 @@ fn init_layer(neurons int, inputs int, func string) Layer {
     new_layer := Layer{
         neurons: neurons
         inputs: inputs
+        func: func
         act: act
         act_d: act_d
         learn_rate: learn_rate
@@ -79,7 +81,6 @@ fn init_layer(neurons int, inputs int, func string) Layer {
         z: z
         prev_layer: prev_layer
     }
-    println('new layer initialised')
     return new_layer
 }
 
@@ -88,12 +89,15 @@ fn dot_prod(a []f64, b []f64) f64 {
 }
 
 fn mat_mul(a [][]f64, b [][]f64) [][]f64 {
+    if a[0].len != b.len {
+        println('a x b')
+        println(a)
+        println(b)
+        panic('matrix dimensions different. a x b: ${a.len}x${a[0].len} x ${b.len}x${b[0].len}')
+        // return error ('matrix dimensions different. ${a[0].len} x ${b.len}')
+        // return [][]f64{}
+    }
     mut res := [][]f64{len: a.len, init: []f64{len: b[0].len}}
-    println('matmul a:')
-    println(a)
-    println('matmul b:')
-    println(b)
-
     for row in 0 .. a.len {
         for col in 0 .. b[0].len {
             res[row][col] = 0.0
@@ -106,51 +110,72 @@ fn mat_mul(a [][]f64, b [][]f64) [][]f64 {
 }
 
 fn transpose(a [][]f64) [][]f64 {
-    mut b := [][]f64{len: a.len, init: []f64{init: a[0].len}}
+    mut b := [][]f64{len: a[0].len, init: []f64{len: a.len}}
     for r in 0 .. a.len {
-        for c in 0 .. a[r].len {
-            b[r][c] = a[c][r]
+        for c in 0 .. a[0].len {
+            b[c][r] = a[r][c]
         }
     }
     return b
 }
+
 // feed_fwd takes input from previous layer, computes dot product and passes to next layer
 fn (mut l Layer) feed_fwd(prev_layer [][]f64) [][]f64 {
     l.prev_layer = prev_layer.map(it.clone())
-    zmm := mat_mul(l.prev_layer, l.w)
+    zmm := mat_mul(l.w, prev_layer)
+    println('zmm')
+    println(zmm)
     zmmgroup := zmm.map(arrays.group<f64>(it, l.b))
-    l.z = zmmgroup.map(it.map(it[0] + it[1]))
-    l.a = l.z.map(l.act(it)) 
-    return l.a
+    println('zmmgroup')
+    println(zmmgroup)
+    // l.z = zmmgroup.map(it.map(it[0] + it[1]))
+    // dump(zmmgroup.map(it.map(it[0] + it[1])))
+    // l.a = zmmgroup.map(it.map(it[0] + it[1])).map(l.act(it)) 
+    // return zmmgroup.map(it.map(it[0] + it[1])).map(l.act(it)) 
+    l.z = zmm
+    l.a = zmm.map(l.act(it))
+    return zmm.map(l.act(it))
 }
 
 fn (mut l Layer) back_prop(da [][]f64) [][]f64 {
     // apply derivative of activation and multiply
     // element wise with da - differentiated A
+    println('da')
+    println(da)
     act_d_z := l.z.map(l.act_d(it))
-    mut dz := [][]f64{}
+    println('act_d_z')
+    println(act_d_z)
+    mut dz := act_d_z.map(it.clone())
+    println('initial dz')
+    println(dz)
+    // dat := transpose(da)
+    // println('dat')
+    // println(dat)
     for i in 0 .. act_d_z.len {
-        for j in 0 .. da.len {
+        for j in 0 .. act_d_z[0].len {
             dz[i][j] = act_d_z[i][j] * da[i][j]
         }
     }
-    prev_da := mat_mul(transpose(l.w), dz)
+    prev_da := mat_mul(l.w, transpose(dz))
     // 1/dz.len * mat_mul(dz, transpose(l.prev_layer))
-    mut dw := mat_mul(dz, transpose(l.prev_layer))
+    mut dw := mat_mul(transpose(dz), l.prev_layer)
     for p in 0 .. dw.len {
         for q in 0 .. dw[0].len {
             dw[p][q] *= 1/dz.len
         }
     }
+    println('dw')
+    println(dw)
     // 1/dz.len * sum_reduce(dz)
     mut db := dz.map(arrays.sum(it) or { 0.0 })
     for r in 0 .. db.len {
         db[r] *= 1/dz.len
     }
     // l.w -= l.learn_rate * dw
+    // dw should be transposed dimensions to l.w, so we are using reversed indices here
     for x in 0 .. l.w.len {
         for y in 0 .. l.w[0].len {
-            l.w[x][y] -= l.learn_rate * dw[x][y]
+            l.w[x][y] -= l.learn_rate * dw[y][x]
         }
     }
     // l.b -= l.learn_rate * db
@@ -197,7 +222,7 @@ fn d_sigmoid(x []f64) []f64 {
 }
 
 // Loss Functions 
-fn logloss(y []f64, a [][]f64) []f64 {
+fn logloss(y [][]f64, a [][]f64) [][]f64 {
     // alog := a.map(math.log(it))
     // alogit := a.map(math.log(1-it))
     mut alog := [][]f64{len: a.len, init: []f64{len: a[0].len}}
@@ -208,19 +233,38 @@ fn logloss(y []f64, a [][]f64) []f64 {
             alogit[i][j] = math.log(1 - a[i][j])
         }
     }
-    mut one_sub_y := y.map(1-it)
-    mut lgl := []f64{}
-    mut lgla := alog.map(dot_prod(it, y))
-    mut lglb := alogit.map(dot_prod(it, one_sub_y))
-    for k in 0 .. a.len {
-        lgl << -1 * (lgla[k] + lglb[k])
+    mut one_sub_y := y.map(it.map(1-it))
+    // mut lgla := alog ⊙ one_sub_y
+    mut lgla := alog.map(it.clone())
+    for i in 0 .. lgla.len {
+        for j in 0 .. lgla[0].len {
+            lgla[i][j] *= one_sub_y[i][j]
+        }
+    }
+    // mut lglb := alogit ⊙ one_sub_y
+    mut lglb := alogit.map(it.clone())
+    for i in 0 .. lglb.len {
+        for j in 0 .. lglb[0].len {
+            lglb[i][j] *= one_sub_y[i][j]
+        }
+    }
+
+	// -1 * (alog + alogit)
+    // for k in 0 .. a.len {
+        // lgl << -1 * (lgla[k] + lglb[k])
+    // }
+    mut lgl := lgla.map(it.clone())
+    for i in 0 .. lgla.len {
+        for j in 0 .. lgla[0].len {
+            lgl[i][j] = -1 * (lgla[i][j] + lglb[i][j])
+        }
     }
     return lgl
 }
 
 // d_logloss is an element-wise operation of form
 // (a - y)/(a*(1 - a))
-fn d_logloss(y []f64, a [][]f64) [][]f64 {
+fn d_logloss(y [][]f64, a [][]f64) [][]f64 {
     mut bot_a := a.map(it.clone())
     for i in 0 .. a.len {
         for j in 0 .. a[0].len {
@@ -230,8 +274,8 @@ fn d_logloss(y []f64, a [][]f64) [][]f64 {
     // a.map(it - y)
     mut top_a := a.map(it.clone())
     for k in 0 .. a.len {
-        for l in 0 .. y.len {
-            top_a[k][l] -= y[l]
+        for l in 0 .. a[0].len {
+            top_a[k][l] -= y[k][l]
             top_a[k][l] /= bot_a[k][l]
         }
     }
@@ -255,9 +299,9 @@ pub fn (mut m KMeansModel) predict<T>(data [][]T) ![]f64 {
 	return [0.0]
 }
 
-pub fn demo() ![]NeuralNetModel {
+pub fn demo() []NeuralNetModel {
     x_train := [[0.0, 0.0, 1.0, 1.0], [0.0, 1.0, 0.0, 1.0]]
-    y_train := [0.0, 1.0, 0.0, 0.0]
+    y_train := [[0.0, 1.0, 0.0, 0.0]]
     m := 4
     epochs := 10
     mut layers := [
@@ -268,24 +312,43 @@ pub fn demo() ![]NeuralNetModel {
 
     for _ in 0 .. epochs {
         // train by feedforward
-        println('a 270')
-        mut a := x_train.map(it.clone())
+        mut a := transpose(x_train.map(it.clone()))
+        println('a at start')
         println(a)
+        /*
         for mut l in layers {
             println('a at layer ${l}')
             println(a)
             a = l.feed_fwd(a)
         }
-      // keep track of costs to plot
-      costs << 1/m * arrays.sum(logloss(y_train, a)) or { 1.0 }
+        */
+        a = layers[0].feed_fwd(a)
+        println(layers[0])
+        a = layers[1].feed_fwd(a)
+        println(layers[1])
+        println('a at end')
+        println(a)
+        // keep track of costs to plot
+        epoch_loss := logloss(y_train, a)
+        costs << 1/m * arrays.sum(arrays.flatten(epoch_loss)) or { 0.0 }
 
         // perform backpropagation
         println('a b4 d_logloss')
         println(a)
         mut da := d_logloss(y_train, a)
-        for mut l in layers.reverse() {
-            da = l.back_prop(da)
-        }
+        println('da b4 logloss')
+        println(da)
+        // for mut l in layers.reverse() {
+            // da = l.back_prop(da)
+        // }
+        da = layers[1].back_prop(da)
+        println('layer 1 after backprop')
+        println(layers[1])
+        da = layers[0].back_prop(da)
+        println('layer 0 after backprop')
+        println(layers[0])
+        println('da b4 logloss')
+        println(da)
     }
 
     mut demo_train := [[1.0, 1.0, 0.0, 0.0], [1.0, 0.0, 1.0, 0.0]]
