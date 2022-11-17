@@ -122,7 +122,8 @@ fn transpose(a [][]f64) [][]f64 {
 // feed_fwd takes input from previous layer, computes dot product and passes to next layer
 fn (mut l Layer) feed_fwd(prev_layer [][]f64) [][]f64 {
     l.prev_layer = prev_layer.map(it.clone())
-    zmm := mat_mul(l.w, prev_layer)
+    // TODO: add l.b to mat_mul result in zmm
+    zmm := mat_mul(prev_layer, l.w)
     println('zmm')
     println(zmm)
     zmmgroup := zmm.map(arrays.group<f64>(it, l.b))
@@ -234,18 +235,19 @@ fn logloss(y [][]f64, a [][]f64) [][]f64 {
         }
     }
     mut one_sub_y := y.map(it.map(1-it))
-    // mut lgla := alog ⊙ one_sub_y
+    mut osy_t := transpose(one_sub_y)
+    // mut lgla := alog ⊙ one_sub_y.T
     mut lgla := alog.map(it.clone())
     for i in 0 .. lgla.len {
         for j in 0 .. lgla[0].len {
-            lgla[i][j] *= one_sub_y[i][j]
+            lgla[i][j] *= osy_t[i][j]
         }
     }
-    // mut lglb := alogit ⊙ one_sub_y
+    // mut lglb := alogit ⊙ one_sub_y.T
     mut lglb := alogit.map(it.clone())
     for i in 0 .. lglb.len {
         for j in 0 .. lglb[0].len {
-            lglb[i][j] *= one_sub_y[i][j]
+            lglb[i][j] *= osy_t[i][j]
         }
     }
 
@@ -273,8 +275,15 @@ fn d_logloss(y [][]f64, a [][]f64) [][]f64 {
     }
     // a.map(it - y)
     mut top_a := a.map(it.clone())
-    for k in 0 .. a.len {
-        for l in 0 .. a[0].len {
+    println('a before a-y dlogloss')
+    println(a)
+    println('top_a dlogloss')
+    println(top_a)
+    println('y dlogloss')
+    println(y)
+    // yt := transpose(y)
+    for k in 0 .. top_a.len {
+        for l in 0 .. top_a[0].len {
             top_a[k][l] -= y[k][l]
             top_a[k][l] /= bot_a[k][l]
         }
