@@ -281,10 +281,16 @@ fn d_logloss(y [][]f64, a [][]f64) [][]f64 {
     println(top_a)
     println('y dlogloss')
     println(y)
-    // yt := transpose(y)
+    yt := transpose(y)
     for k in 0 .. top_a.len {
         for l in 0 .. top_a[0].len {
-            top_a[k][l] -= y[k][l]
+            // TODO: make this uncessary. use e.g. broadcasting
+            // use transpose if dimensions are reversed
+            if top_a.len == y[0].len && top_a[0].len == y.len {
+                top_a[k][l] -= yt[k][l]
+            } else {
+                top_a[k][l] -= y[k][l]
+            }
             top_a[k][l] /= bot_a[k][l]
         }
     }
