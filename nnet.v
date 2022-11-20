@@ -154,7 +154,12 @@ fn (mut l Layer) back_prop(da [][]f64) [][]f64 {
     // println(dat)
     for i in 0 .. act_d_z.len {
         for j in 0 .. act_d_z[0].len {
-            dz[i][j] = act_d_z[i][j] * da[i][j]
+            // dz[i][j] = act_d_z[i][j] * da[i][j]
+            if act_d_z.len == da[0].len && act_d_z[0].len == da.len {
+                dz[i][j] = act_d_z[i][j] * da[j][i]
+            } else {
+                dz[i][j] = act_d_z[i][j] * da[i][j]
+            }
         }
     }
     prev_da := mat_mul(l.w, transpose(dz))
@@ -366,12 +371,17 @@ pub fn demo() []NeuralNetModel {
         println(da)
     }
 
+    println('NEURAL NET PREDICTION')
     mut demo_train := [[1.0, 1.0, 0.0, 0.0], [1.0, 0.0, 1.0, 0.0]]
-    for mut lyr in layers {
-        demo_train = lyr.feed_fwd(demo_train)
-    }
-    println('neural net prediction')
-    println(demo_train)
+    println('DEMO DATA INPUT:\n${demo_train}')
+//    for mut lyr in layers {
+//        demo_train = lyr.feed_fwd(transpose(demo_train))
+//    }
+    demo_train = layers[0].feed_fwd(transpose(demo_train))
+    println(layers[0])
+    demo_train = layers[1].feed_fwd(demo_train)
+    println(layers[1])
+    println('DEMO DATA PREDICTED OUTPUT:\n${demo_train}')
 
 	return [NeuralNetModel{
         [3,3,3]
