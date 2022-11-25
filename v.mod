@@ -1,7 +1,7 @@
 Module {
 	name: 'vml'
-	description: ''
-	version: ''
-	license: ''
+	description: 'simple machine learning for the V programming language'
+	version: '0.0.1'
+	license: 'Apache 2.0'
 	dependencies: []
 }
