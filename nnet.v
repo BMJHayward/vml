@@ -5,10 +5,6 @@ import math
 import rand
 
 pub fn name() string {
-    // TODO: single layer perception
-    // TODO: multilayer perception
-    // TODO: backpropagation, stochastic gradient descent
-    // TODO: other activate functs e.g. sigmoid, softmax
     return 'basic feed forward neural network'
 }
 
@@ -94,8 +90,6 @@ fn mat_mul(a [][]f64, b [][]f64) [][]f64 {
         println(a)
         println(b)
         panic('matrix dimensions different. a x b: ${a.len}x${a[0].len} x ${b.len}x${b[0].len}')
-        // return error ('matrix dimensions different. ${a[0].len} x ${b.len}')
-        // return [][]f64{}
     }
     mut res := [][]f64{len: a.len, init: []f64{len: b[0].len}}
     for row in 0 .. a.len {
@@ -124,15 +118,7 @@ fn (mut l Layer) feed_fwd(prev_layer [][]f64) [][]f64 {
     l.prev_layer = prev_layer.map(it.clone())
     // TODO: add l.b to mat_mul result in zmm
     zmm := mat_mul(prev_layer, l.w)
-    println('zmm')
-    println(zmm)
     zmmgroup := zmm.map(arrays.group<f64>(it, l.b))
-    println('zmmgroup')
-    println(zmmgroup)
-    // l.z = zmmgroup.map(it.map(it[0] + it[1]))
-    // dump(zmmgroup.map(it.map(it[0] + it[1])))
-    // l.a = zmmgroup.map(it.map(it[0] + it[1])).map(l.act(it)) 
-    // return zmmgroup.map(it.map(it[0] + it[1])).map(l.act(it)) 
     l.z = zmm
     l.a = zmm.map(l.act(it))
     return zmm.map(l.act(it))
@@ -141,17 +127,8 @@ fn (mut l Layer) feed_fwd(prev_layer [][]f64) [][]f64 {
 fn (mut l Layer) back_prop(da [][]f64) [][]f64 {
     // apply derivative of activation and multiply
     // element wise with da - differentiated A
-    println('da')
-    println(da)
     act_d_z := l.z.map(l.act_d(it))
-    println('act_d_z')
-    println(act_d_z)
     mut dz := act_d_z.map(it.clone())
-    println('initial dz')
-    println(dz)
-    // dat := transpose(da)
-    // println('dat')
-    // println(dat)
     for i in 0 .. act_d_z.len {
         for j in 0 .. act_d_z[0].len {
             // dz[i][j] = act_d_z[i][j] * da[i][j]
@@ -170,8 +147,6 @@ fn (mut l Layer) back_prop(da [][]f64) [][]f64 {
             dw[p][q] *= 1/dz.len
         }
     }
-    println('dw')
-    println(dw)
     // 1/dz.len * sum_reduce(dz)
     mut db := dz.map(arrays.sum(it) or { 0.0 })
     for r in 0 .. db.len {
@@ -280,16 +255,9 @@ fn d_logloss(y [][]f64, a [][]f64) [][]f64 {
     }
     // a.map(it - y)
     mut top_a := a.map(it.clone())
-    println('a before a-y dlogloss')
-    println(a)
-    println('top_a dlogloss')
-    println(top_a)
-    println('y dlogloss')
-    println(y)
     yt := transpose(y)
     for k in 0 .. top_a.len {
         for l in 0 .. top_a[0].len {
-            // TODO: make this uncessary. use e.g. broadcasting
             // use transpose if dimensions are reversed
             if top_a.len == y[0].len && top_a[0].len == y.len {
                 top_a[k][l] -= yt[k][l]
@@ -333,42 +301,19 @@ pub fn demo() []NeuralNetModel {
     for _ in 0 .. epochs {
         // train by feedforward
         mut a := transpose(x_train.map(it.clone()))
-        println('a at start')
-        println(a)
-        /*
-        for mut l in layers {
-            println('a at layer ${l}')
-            println(a)
-            a = l.feed_fwd(a)
-        }
-        */
         a = layers[0].feed_fwd(a)
-        println(layers[0])
         a = layers[1].feed_fwd(a)
-        println(layers[1])
-        println('a at end')
-        println(a)
         // keep track of costs to plot
         epoch_loss := logloss(y_train, a)
         costs << 1/m * arrays.sum(arrays.flatten(epoch_loss)) or { 0.0 }
 
         // perform backpropagation
-        println('a b4 d_logloss')
-        println(a)
         mut da := d_logloss(y_train, a)
-        println('da b4 logloss')
-        println(da)
         // for mut l in layers.reverse() {
             // da = l.back_prop(da)
         // }
         da = layers[1].back_prop(da)
-        println('layer 1 after backprop')
-        println(layers[1])
         da = layers[0].back_prop(da)
-        println('layer 0 after backprop')
-        println(layers[0])
-        println('da b4 logloss')
-        println(da)
     }
 
     println('NEURAL NET PREDICTION')
