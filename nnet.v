@@ -118,7 +118,6 @@ fn (mut l Layer) feed_fwd(prev_layer [][]f64) [][]f64 {
     l.prev_layer = prev_layer.map(it.clone())
     // TODO: add l.b to mat_mul result in zmm
     zmm := mat_mul(prev_layer, l.w)
-    zmmgroup := zmm.map(arrays.group<f64>(it, l.b))
     l.z = zmm
     l.a = zmm.map(l.act(it))
     return zmm.map(l.act(it))

@@ -33,6 +33,7 @@ type Tree = Empty | Node
 struct Empty {}
 
 struct Node {
+    mut: 
     feature Feature
     threshold f64
     left Tree
@@ -42,6 +43,7 @@ struct Node {
 
 fn init_node(feature Feature, threshold f64, left Node, right Node, value f64) Tree {
     return Node {
+      mut
         feature
         threshold
         left
@@ -50,7 +52,12 @@ fn init_node(feature Feature, threshold f64, left Node, right Node, value f64) T
     }
 }
 
+fn (n Node) is_leaf() bool {
+    return n.value > 0
+}
+
 struct DecisionTree {
+  mut:
     min_samples_split int
     max_depth int
     n_feats int
@@ -64,4 +71,15 @@ fn init_tree(min_samples_split int, max_depth int, n_feats int) DecisionTree {
         n_feats
         Empty{}
     }
+}
+
+fn (mut dt DecisionTree) fit(x []f64, y []f64) ? {
+    // self.n_feats = X.shape[1] if not self.n_feats else min(self.n_feats, X.shape[1])
+    // self.root = self._grow_tree(X, y)
+    if dt.n_feats > 0 {
+        dt.n_feats = math.min(dt.n_feats, x.len)
+    } else {
+        dt.n_feats = x.len
+    }
+    dt.root = Tree{} // should be grow tree function here
 }
