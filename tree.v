@@ -7,6 +7,25 @@ pub fn name() string {
     return 'decision tree'
 }
 
+fn counter<T>(a []T) [](T, int) {
+    amax := arrays.max(a) or { panic('max a failed')}
+    mut auniq := map[T]int{}
+    for i in 0 .. a.len {
+        auniq[a[i]] += 1
+    }
+    mut kk := []{}
+    for k in auniq.keys() {
+        kk << [k, auniq[k]]
+    }
+    return kk
+}
+
+fn _most_common_label<T>(y []T) T {
+    counter := counter(y)
+    counter.sort(a[1] > b[1])
+    return counter[0]
+}
+
 fn entropy(y []u8) f64 {
     ymax := arrays.max(y) or { panic('max y failed')}
     mut hist := []u8{len: int(ymax) + 1, init: 0} 
