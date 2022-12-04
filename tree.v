@@ -2,28 +2,34 @@ module tree
 
 import arrays
 import math
+import rand
 
 pub fn name() string {
     return 'decision tree'
 }
 
-fn counter<T>(a []T) [](T, int) {
-    amax := arrays.max(a) or { panic('max a failed')}
+type KCounter = T | int
+struct HistCount<T>{
+    val T
+    count int
+}
+
+fn hist_counter<T>(a []T) []HistCount<T> {
     mut auniq := map[T]int{}
     for i in 0 .. a.len {
         auniq[a[i]] += 1
     }
-    mut kk := []{}
+    mut kk := []HistCount<T>{}
     for k in auniq.keys() {
-        kk << [k, auniq[k]]
+        kk << [HistCount<T>{k, auniq[k]}]
     }
     return kk
 }
 
-fn _most_common_label<T>(y []T) T {
-    counter := counter(y)
-    counter.sort(a[1] > b[1])
-    return counter[0]
+fn most_common<T>(y []T) T {
+    mut counter := hist_counter(y)
+    counter.sort(a.count > b.count)
+    return counter[0].val
 }
 
 fn entropy(y []u8) f64 {
@@ -93,12 +99,95 @@ fn init_tree(min_samples_split int, max_depth int, n_feats int) DecisionTree {
 }
 
 fn (mut dt DecisionTree) fit(x []f64, y []f64) ? {
-    // self.n_feats = X.shape[1] if not self.n_feats else min(self.n_feats, X.shape[1])
-    // self.root = self._grow_tree(X, y)
+    // dt.n_feats = X.shape[1] if not dt.n_feats else min(dt.n_feats, x.shape[1])
+    // dt.root = dt.grow_tree(X, y)
     if dt.n_feats > 0 {
         dt.n_feats = math.min(dt.n_feats, x.len)
     } else {
         dt.n_feats = x.len
     }
-    dt.root = Tree{} // should be grow tree function here
+    dt.root = Empty{} // should be grow tree function here
+}
+
+fn (dt DecisionTree) grow_tree(x [][]f64, y []f64, depth int) Node {
+    n_samples := x.len
+    n_features := x[0].len
+    // n_labels := len(np.unique(y))
+    mut yuniq := map[f64]f64{}
+    for yq in y {
+        yuniq[yq] = yq
+    }
+    n_labels := yuniq.len
+
+    // stopping criteria
+    if depth >= dt.max_depth
+        || n_labels == 1
+        || n_samples < dt.min_samples_split {
+        leaf_value := most_common(y)
+        return Node{[]f64{len: n_features}, 0.0, Empty{}, Empty{}, leaf_value}
+    }
+
+    mut n_feat_array := []int{}
+	for n in 0 .. n_features {
+        n_feat_array << n
+    }
+    feature_indices := rand.choose<int>(n_feat_array, dt.n_feats) or { panic('failed to create feat indices') }
+
+    // greedily select the best split according to information gain
+    best_feat, best_thresh := best_criteria<f64>(x, y, feature_indices)
+    // grow the children that result from the split
+    left_idxs, right_idxs := split<f64>(x[..][best_feat], best_thresh)
+    left := dt.grow_tree(x[left_idxs], y[left_idxs], depth+1)
+    right := dt.grow_tree(x[right_idxs], y[right_idxs], depth+1)
+    return Node{best_feat, best_thresh, left, right, 0}
+}
+
+
+fn split<T>(x_column []T, split_thresh T) ([]int, []int) {
+    left_vals := arrays.filter_indexed<T>(x_column, fn<T>(idx int, el T) bool {
+        return el <= split_thresh
+    })
+    mut left_idxs := []int{}
+    for i, l in left_vals {
+        if l {
+            left_idxs << i
+        }
+    }
+    right_vals := x_column.filter(it > split_thresh)
+    mut right_idxs := []int{}
+    for i, r in right_vals {
+        if r {
+            right_idxs << i
+        }
+    }
+    return left_idxs, right_idxs
+    }
+
+fn best_criteria<T>(x [][]T, y []T, feat_idxs []int) (int, T) {
+    mut best_gain := -1
+    mut split_idx, split_thresh := none, none
+    for feat_idx in feat_idxs {
+        mut x_column := []int{}
+        for xc in 0 .. x.len {
+            x_column << x[xc][feat_idx]
+        }
+        // thresholds = unique(x_column)  // TODO make a unique function
+        mut tuniq := map[f64]f64{}
+        for t in x_column {
+            tuniq[t] = t
+        }
+        for _, v in tuniq {
+            thresholds << v
+        }
+        for threshold in thresholds {
+            gain := feat_idxs.len / y.len
+            // gain := self.information_gain(y, x_column, threshold)
+            if gain > best_gain {
+                best_gain = gain
+                split_idx = feat_idx
+                split_thresh = threshold
+            }
+        }
+    }
+    return split_idx, split_thresh
 }

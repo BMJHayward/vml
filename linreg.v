@@ -64,24 +64,6 @@ pub fn (m LinearModel) predict<T>(data []T) []T {
 	println('DATA: $data')
 }
 
-/*
-pub fn plot() {
-	mut plt := plot.new_plot()
-    plt.add_trace(
-        trace_type: .scatter
-        x: test_x
-        y: test_y
-        mode: 'markers'
-        marker: plot.Marker{
-                size: []f64{len: test_x.len, init: 10.0}
-                color: []string{len: test_x.len, init: '#ff0000'}
-                }
-    )
-    plt.set_layout(title: 'linear regression demo')
-    plt.show()
-}
-*/
-
 pub fn demo() []LinearModel {
 	mut test_x1 := []f64{}
 	mut test_x2 := []f64{}
