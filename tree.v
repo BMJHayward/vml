@@ -141,28 +141,22 @@ fn (dt DecisionTree) grow_tree(x [][]f64, y []f64, depth int) Node {
 
 
 fn split<T>(x_column []T, split_thresh T) ([]int, []int) {
-    left_vals := arrays.filter_indexed<T>(x_column, fn<T>(idx int, el T) bool {
-        return el <= split_thresh
-    })
     mut left_idxs := []int{}
-    for i, l in left_vals {
-        if l {
-            left_idxs << i
-        }
-    }
-    right_vals := x_column.filter(it > split_thresh)
     mut right_idxs := []int{}
-    for i, r in right_vals {
-        if r {
+    for i in 0 .. x_column.len {
+        if x_column[i] <= split_thresh {
+            left_idxs << i
+        } else {
             right_idxs << i
         }
     }
+
     return left_idxs, right_idxs
     }
 
 fn best_criteria<T>(x [][]T, y []T, feat_idxs []int) (int, T) {
     mut best_gain := -1
-    mut split_idx, split_thresh := none, none
+    mut split_idx, split_thresh := 0, 0
     for feat_idx in feat_idxs {
         mut x_column := []int{}
         for xc in 0 .. x.len {
