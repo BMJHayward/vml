@@ -8,37 +8,30 @@ pub fn name() string {
     return 'decision tree'
 }
 
-type KCounter = T | int
-struct HistCount<T>{
-    val T
-    count int
-}
-
-fn hist_counter<T>(a []T) []HistCount<T> {
-    mut auniq := map[T]int{}
-    for i in 0 .. a.len {
-        auniq[a[i]] += 1
-    }
-    mut kk := []HistCount<T>{}
-    for k in auniq.keys() {
-        kk << [HistCount<T>{k, auniq[k]}]
-    }
-    return kk
-}
-
 fn most_common<T>(y []T) T {
-    mut counter := hist_counter(y)
-    counter.sort(a.count > b.count)
-    return counter[0].val
+    mut max_count := 0
+    mut most_frequent := 0
+    for i in 0 .. y.len {
+        mut count := 0
+        for j in 0 .. y.len {
+            if y[i] == y[j] {
+                count += 1
+            }
+        }
+        if count > max_count {
+            max_count = count
+            most_frequent = y[i]
+        }
+    }
+    return most_frequent
 }
 
-fn entropy(y []u8) f64 {
-    ymax := arrays.max(y) or { panic('max y failed')}
-    mut hist := []u8{len: int(ymax) + 1, init: 0} 
+fn entropy<T>(y []T) f64 {
+    mut hist := map[T]int{}
     for i in 0 .. y.len {
         hist[y[i]] += 1
     }
-    mut probs := hist.map(it / y.len)
+    mut probs := hist.values().map(it / y.len)
     return arrays.sum(probs.filter(it > 0).map(it * math.log2(it))) or { panic('failed to sum array') }
 }
 
@@ -59,14 +52,14 @@ struct Empty {}
 
 struct Node {
     mut: 
-    feature Feature
+    feature int
     threshold f64
     left Tree
     right Tree
     value f64
 }
 
-fn init_node(feature Feature, threshold f64, left Node, right Node, value f64) Tree {
+fn init_node(feature int, threshold f64, left Node, right Node, value f64) Tree {
     return Node {
       mut
         feature
@@ -124,7 +117,7 @@ fn (dt DecisionTree) grow_tree(x [][]f64, y []f64, depth int) Node {
         || n_labels == 1
         || n_samples < dt.min_samples_split {
         leaf_value := most_common(y)
-        return Node{[]f64{len: n_features}, 0.0, Empty{}, Empty{}, leaf_value}
+        return Node{0, 0.0, Empty{}, Empty{}, leaf_value}
     }
 
     mut n_feat_array := []int{}
@@ -137,8 +130,12 @@ fn (dt DecisionTree) grow_tree(x [][]f64, y []f64, depth int) Node {
     best_feat, best_thresh := best_criteria<f64>(x, y, feature_indices)
     // grow the children that result from the split
     left_idxs, right_idxs := split<f64>(x[..][best_feat], best_thresh)
-    left := dt.grow_tree(x[left_idxs], y[left_idxs], depth+1)
-    right := dt.grow_tree(x[right_idxs], y[right_idxs], depth+1)
+    xlix := left_idxs.map(x[it])
+    xrix := right_idxs.map(x[it])
+    ylix := left_idxs.map(y[it])
+    yrix := right_idxs.map(y[it])
+    left := dt.grow_tree(xlix, ylix, depth+1)
+    right := dt.grow_tree(xrix, yrix, depth+1)
     return Node{best_feat, best_thresh, left, right, 0}
 }
 
@@ -180,8 +177,8 @@ fn best_criteria<T>(x [][]T, y []T, feat_idxs []int) (int, T) {
             thresholds << v
         }
         for threshold in thresholds {
-            gain := feat_idxs.len / y.len
-            // gain := self.information_gain(y, x_column, threshold)
+            // gain := feat_idxs.len / y.len
+            gain := info_gain(y, x_column, threshold)
             if gain > best_gain {
                 best_gain = gain
                 split_idx = feat_idx
@@ -190,4 +187,26 @@ fn best_criteria<T>(x [][]T, y []T, feat_idxs []int) (int, T) {
         }
     }
     return split_idx, split_thresh
+}
+
+fn info_gain<T>(y []T, xcol []T, threshold T) f64 {
+    parent_entropy := entropy(y)
+    l, r := split(xcol, threshold)
+    if l.len == 0.0 {
+        return 0.0
+    }
+    if r.len == 0.0 {
+        return 0.0
+    }
+
+    ylen := y.len
+    rlen := r.len
+    llen := l.len
+    left_idxs := l.map(y[it])
+    right_idxs := r.map(y[it])
+    lentropy := entropy(left_idxs)
+    rentropy := entropy(right_idxs)
+    child_entropy := ( llen / ylen ) * lentropy + (rlen / ylen) * rentropy
+
+    return parent_entropy - child_entropy
 }
