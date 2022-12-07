@@ -154,6 +154,14 @@ fn split<T>(x_column []T, split_thresh T) ([]int, []int) {
     return left_idxs, right_idxs
     }
 
+fn unique<T>(all []T) []T {
+    mut s := map[T]T{}
+    for a in all {
+        s[a] = a
+    }
+    return s.keys()
+}
+
 fn best_criteria<T>(x [][]T, y []T, feat_idxs []int) (int, T) {
     mut best_gain := -1
     mut split_idx, split_thresh := 0, 0
@@ -162,14 +170,7 @@ fn best_criteria<T>(x [][]T, y []T, feat_idxs []int) (int, T) {
         for xc in 0 .. x.len {
             x_column << x[xc][feat_idx]
         }
-        // thresholds = unique(x_column)  // TODO make a unique function
-        mut tuniq := map[f64]f64{}
-        for t in x_column {
-            tuniq[t] = t
-        }
-        for _, v in tuniq {
-            thresholds << v
-        }
+        thresholds = unique(x_column)  // TODO make a unique function
         for threshold in thresholds {
             // gain := feat_idxs.len / y.len
             gain := info_gain(y, x_column, threshold)
