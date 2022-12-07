@@ -163,14 +163,15 @@ fn unique<T>(all []T) []T {
 }
 
 fn best_criteria<T>(x [][]T, y []T, feat_idxs []int) (int, T) {
-    mut best_gain := -1
-    mut split_idx, split_thresh := 0, 0
+    mut best_gain := -1.0
+    mut split_idx := 0
+    mut split_thresh := 0.0
     for feat_idx in feat_idxs {
-        mut x_column := []int{}
+        mut x_column := []T{}
         for xc in 0 .. x.len {
             x_column << x[xc][feat_idx]
         }
-        thresholds = unique(x_column)  // TODO make a unique function
+        thresholds := unique(x_column)  // TODO make a unique function
         for threshold in thresholds {
             // gain := feat_idxs.len / y.len
             gain := info_gain(y, x_column, threshold)
