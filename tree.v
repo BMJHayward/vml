@@ -218,3 +218,7 @@ fn info_gain<T>(y []T, xcol []T, threshold T) f64 {
 
 	return parent_entropy - child_entropy
 }
+
+pub fn demo() string {
+    return 'insert decision tree demo here'
+}
