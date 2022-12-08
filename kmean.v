@@ -71,7 +71,7 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 	mut point_counts := []int{}
 	mut centroids := [][]f64{}
 	match m.centroids.len {
-        0 {
+		0 {
 			centroids = [][]f64{}
 			for pt in 0 .. m.optimum_clusters {
 				if pt < 0 {

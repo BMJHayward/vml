@@ -46,16 +46,18 @@ fn estimate_coefficients<T>(x []T, y []T) []T {
 }
 
 struct LinearModel {
-    coeffs []f64
+	coeffs []f64
 }
 
 /*
 Train and predict will make a common API amongst as many model types as possible
 */
-pub fn (m LinearModel) train<T>(inputs [][]T, output []T) []LinearModel{
+pub fn (m LinearModel) train<T>(inputs [][]T, output []T) []LinearModel {
 	mut lm := []LinearModel{len: inputs.len}
 	for inp in inputs {
-		lm << LinearModel{ coeffs: estimate_coefficients(inp, output)}
+		lm << LinearModel{
+			coeffs: estimate_coefficients(inp, output)
+		}
 	}
 	return lm
 }
@@ -70,11 +72,13 @@ pub fn demo() []LinearModel {
 	mut test_y := []f64{}
 	for i := 0; i < 100; i++ {
 		test_x1 << f64(i)
-		test_x2 << f64(2*i)
-		test_y << 3 * (i + rand.int_in_range(-1,1) or { 0 })
+		test_x2 << f64(2 * i)
+		test_y << 3 * (i + rand.int_in_range(-1, 1) or { 0 })
 	}
 	// test_reg_coeffs := estimate_coefficients(test_x1, test_y)
-	lm_runner := LinearModel{coeffs: []}
+	lm_runner := LinearModel{
+		coeffs: []
+	}
 	linear_model := lm_runner.train([test_x1, test_x2], test_y)
 	return linear_model
 }
