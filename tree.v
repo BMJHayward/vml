@@ -39,7 +39,7 @@ fn entropy<T>(y []T) f64 {
 
 fn accuracy(y_true []f64, y_pred []f64) f64 {
 	mut acc := 0.0
-	for t in 0 .. y_true.len {
+	for t in 0 .. math.min(y_true.len, y_pred.len) {
 		if y_true[t] == y_pred[t] {
 			acc += 1
 		}
@@ -101,7 +101,7 @@ fn (mut dt DecisionTree) predict(x [][]f64) []f64 {
 fn traverse(x []f64, node Tree) f64 {
 	match node {
 		Empty {
-			panic('empty node in tree')
+			return -1.0
 		}
 		Node {
 			if node.is_leaf() {
@@ -219,6 +219,31 @@ fn info_gain<T>(y []T, xcol []T, threshold T) f64 {
 	return parent_entropy - child_entropy
 }
 
-pub fn demo() string {
-    return 'insert decision tree demo here'
+pub fn demo() DecisionTree {
+    // x = data.data
+    /*
+    tx0 := rand.normal(config.NormalConfigStruct{ mu: 50, sigma: 1.0 }) or { 50.0 }
+    tx1 := rand.exponential(2)
+    tx2 := rand.binomial(2, 0.65)
+    */
+    num_samples := 1000
+    num_features := 12
+    mut src := [][]f64{len: num_samples}
+    mut target := []f64{len: num_samples}
+    for s in 0 .. num_samples {
+        for f in 0 .. num_features {
+            src[s] << 0.0
+        }
+        target << 1.0
+    }
+    mut clf := init_tree(2, 10, num_features)
+    clf.fit(src[..500], target[..500]) or { panic('fit failed')}
+    mut y_pred := clf.predict(src[..500])
+    mut acc := accuracy(target[..500], y_pred)
+    println(acc)
+    y_pred = clf.predict(src[500..])
+    acc = accuracy(target[500..], y_pred)
+    println(acc)
+    println(clf)
+    return clf
 }
