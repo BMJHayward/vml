@@ -3,12 +3,14 @@ module tree
 import arrays
 import math
 import rand
+import rand.config
 
 pub fn name() string {
 	return 'decision tree'
 }
 
 fn most_common<T>(y []T) T {
+    println('most common y: ${y}')
 	mut max_count := 0
 	mut most_frequent := 0
 	for i in 0 .. y.len {
@@ -23,6 +25,7 @@ fn most_common<T>(y []T) T {
 			most_frequent = y[i]
 		}
 	}
+    println('most freq: ${most_frequent}')
 	return most_frequent
 }
 
@@ -31,8 +34,9 @@ fn entropy<T>(y []T) f64 {
 	for i in 0 .. y.len {
 		hist[y[i]] += 1
 	}
-	mut probs := hist.values().map(it / y.len)
-	return arrays.sum(probs.filter(it > 0).map(it * math.log2(it))) or {
+	mut probs := hist.values().map(it / f64(y.len))
+    mut logits := probs.filter(it > 0).map( -1 * it * math.log2(it))
+	return arrays.sum(logits) or {
 		panic('failed to sum array')
 	}
 }
@@ -118,7 +122,11 @@ fn traverse(x []f64, node Tree) f64 {
 
 fn (dt DecisionTree) grow_tree(x [][]f64, y []f64, depth int) Node {
 	n_samples := x.len
-	n_features := x[0].len
+	n_features := match n_samples {
+        0 { 0 }
+        1 { x[0].len }
+        else { x[0].len }
+    }
 	mut yuniq := map[f64]f64{}
 	for yq in y {
 		yuniq[yq] = yq
@@ -220,30 +228,75 @@ fn info_gain<T>(y []T, xcol []T, threshold T) f64 {
 }
 
 pub fn demo() DecisionTree {
-    // x = data.data
-    /*
-    tx0 := rand.normal(config.NormalConfigStruct{ mu: 50, sigma: 1.0 }) or { 50.0 }
+	// x = data.data
+	/*
+	tx0 := rand.normal(config.NormalConfigStruct{ mu: 50, sigma: 1.0 }) or { 50.0 }
     tx1 := rand.exponential(2)
     tx2 := rand.binomial(2, 0.65)
-    */
-    num_samples := 1000
-    num_features := 12
-    mut src := [][]f64{len: num_samples}
-    mut target := []f64{len: num_samples}
-    for s in 0 .. num_samples {
-        for f in 0 .. num_features {
-            src[s] << 0.0
-        }
-        target << 1.0
-    }
-    mut clf := init_tree(2, 10, num_features)
-    clf.fit(src[..500], target[..500]) or { panic('fit failed')}
-    mut y_pred := clf.predict(src[..500])
-    mut acc := accuracy(target[..500], y_pred)
-    println(acc)
-    y_pred = clf.predict(src[500..])
-    acc = accuracy(target[500..], y_pred)
-    println(acc)
-    println(clf)
-    return clf
+	*/
+	num_samples := 1000
+	num_features := 12
+	mut src := [][]f64{len: num_samples}
+	mut target := []f64{}
+	for s in 0 .. num_samples {
+		mut class := rand.int_in_range(1, 6) or { panic('rand int failed') }
+		match class {
+			0 {
+				for _ in 0 .. num_features {
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 10.0, sigma: 1.0 }) or {10.0}
+				}
+				target << f64(class)
+			}
+			1 {
+				for _ in 0 .. num_features {
+					// mut tx1 := rand.exponential(2)
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 50.0, sigma: 1.0 }) or { 50.0 }
+				}
+				target << f64(class)
+			}
+			2 {
+				for _ in 0 .. num_features {
+					// mut tx2 := rand.binomial(2, 0.65) or { 2 }
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 90.0, sigma: 1.0 }) or { 90.0 }
+				}
+				target << f64(class)
+			}
+            3 {
+				for _ in 0 .. num_features {
+					// mut tx2 := rand.binomial(2, 0.65) or { 2 }
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 30.0, sigma: 1.0 }) or { 30.0 }
+				}
+				target << f64(class)
+			} 
+            4 {
+				for _ in 0 .. num_features {
+					// mut tx2 := rand.binomial(2, 0.65) or { 2 }
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 10.0, sigma: 1.0 }) or { 10.0 }
+				}
+				target << f64(class)
+			} 
+            5 {
+				for _ in 0 .. num_features {
+					// mut tx2 := rand.binomial(2, 0.65) or { 2 }
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 70.0, sigma: 1.0 }) or { 70.0 }
+				}
+				target << f64(class)
+			} 
+            else {
+				for _ in 0 .. num_features {
+					src[s] << 9.0
+				}
+				target << 9.0
+            }
+		}
+	}
+	mut clf := init_tree(10, 5, num_features)
+	clf.fit(src[200..], target[200..]) or { panic('fit failed') }
+	mut y_pred := clf.predict(src[200..])
+	mut acc := accuracy(target[200..], y_pred)
+	println(acc)
+	y_pred = clf.predict(src[..200])
+	acc = accuracy(target[..200], y_pred)
+	println(acc)
+	return clf
 }
