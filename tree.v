@@ -52,11 +52,11 @@ fn accuracy(y_true []f64, y_pred []f64) f64 {
 }
 
 type Feature = []f64 | []int | []string
-type Tree = Empty | Node
+pub type Tree = Empty | Node
 
-struct Empty {}
+pub struct Empty {}
 
-struct Node {
+pub struct Node {
 mut:
 	feature   int
 	threshold f64
@@ -73,7 +73,7 @@ fn (n Node) is_leaf() bool {
 	return n.value > 0
 }
 
-struct DecisionTree {
+pub struct DecisionTree {
 mut:
 	min_samples_split int
 	max_depth         int
@@ -81,11 +81,11 @@ mut:
 	root              Tree
 }
 
-fn init_tree(min_samples_split int, max_depth int, n_feats int) DecisionTree {
+pub fn init_tree(min_samples_split int, max_depth int, n_feats int) DecisionTree {
 	return DecisionTree{min_samples_split, max_depth, n_feats, Empty{}}
 }
 
-fn (mut dt DecisionTree) fit(x [][]f64, y []f64) ? {
+pub fn (mut dt DecisionTree) fit(x [][]f64, y []f64) ? {
 	if dt.n_feats > 0 {
 		dt.n_feats = math.min(dt.n_feats, x.len)
 	} else {
@@ -94,7 +94,7 @@ fn (mut dt DecisionTree) fit(x [][]f64, y []f64) ? {
 	dt.root = dt.grow_tree(x, y, 0)
 }
 
-fn (mut dt DecisionTree) predict(x [][]f64) []f64 {
+pub fn (mut dt DecisionTree) predict(x [][]f64) []f64 {
 	mut predictions := []f64{}
 	for datum in x {
 		predictions << traverse(datum, dt.root)
