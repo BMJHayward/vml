@@ -10,7 +10,6 @@ pub fn name() string {
 }
 
 fn most_common<T>(y []T) T {
-    println('most common y: ${y}')
 	mut max_count := 0
 	mut most_frequent := 0
 	for i in 0 .. y.len {
@@ -25,7 +24,6 @@ fn most_common<T>(y []T) T {
 			most_frequent = y[i]
 		}
 	}
-    println('most freq: ${most_frequent}')
 	return most_frequent
 }
 
@@ -35,10 +33,8 @@ fn entropy<T>(y []T) f64 {
 		hist[y[i]] += 1
 	}
 	mut probs := hist.values().map(it / f64(y.len))
-    mut logits := probs.filter(it > 0).map( -1 * it * math.log2(it))
-	return arrays.sum(logits) or {
-		panic('failed to sum array')
-	}
+	mut logits := probs.filter(it > 0).map(-1 * it * math.log2(it))
+	return arrays.sum(logits) or { panic('failed to sum array') }
 }
 
 fn accuracy(y_true []f64, y_pred []f64) f64 {
@@ -123,10 +119,10 @@ fn traverse(x []f64, node Tree) f64 {
 fn (dt DecisionTree) grow_tree(x [][]f64, y []f64, depth int) Node {
 	n_samples := x.len
 	n_features := match n_samples {
-        0 { 0 }
-        1 { x[0].len }
-        else { x[0].len }
-    }
+		0 { 0 }
+		1 { x[0].len }
+		else { x[0].len }
+	}
 	mut yuniq := map[f64]f64{}
 	for yq in y {
 		yuniq[yq] = yq
@@ -243,51 +239,63 @@ pub fn demo() DecisionTree {
 		match class {
 			0 {
 				for _ in 0 .. num_features {
-					src[s] << rand.normal(config.NormalConfigStruct{ mu: 10.0, sigma: 1.0 }) or {10.0}
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 10.0, sigma: 1.0 }) or {
+						10.0
+					}
 				}
 				target << f64(class)
 			}
 			1 {
 				for _ in 0 .. num_features {
 					// mut tx1 := rand.exponential(2)
-					src[s] << rand.normal(config.NormalConfigStruct{ mu: 50.0, sigma: 1.0 }) or { 50.0 }
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 50.0, sigma: 1.0 }) or {
+						50.0
+					}
 				}
 				target << f64(class)
 			}
 			2 {
 				for _ in 0 .. num_features {
 					// mut tx2 := rand.binomial(2, 0.65) or { 2 }
-					src[s] << rand.normal(config.NormalConfigStruct{ mu: 90.0, sigma: 1.0 }) or { 90.0 }
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 90.0, sigma: 1.0 }) or {
+						90.0
+					}
 				}
 				target << f64(class)
 			}
-            3 {
+			3 {
 				for _ in 0 .. num_features {
 					// mut tx2 := rand.binomial(2, 0.65) or { 2 }
-					src[s] << rand.normal(config.NormalConfigStruct{ mu: 30.0, sigma: 1.0 }) or { 30.0 }
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 30.0, sigma: 1.0 }) or {
+						30.0
+					}
 				}
 				target << f64(class)
-			} 
-            4 {
+			}
+			4 {
 				for _ in 0 .. num_features {
 					// mut tx2 := rand.binomial(2, 0.65) or { 2 }
-					src[s] << rand.normal(config.NormalConfigStruct{ mu: 10.0, sigma: 1.0 }) or { 10.0 }
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 10.0, sigma: 1.0 }) or {
+						10.0
+					}
 				}
 				target << f64(class)
-			} 
-            5 {
+			}
+			5 {
 				for _ in 0 .. num_features {
 					// mut tx2 := rand.binomial(2, 0.65) or { 2 }
-					src[s] << rand.normal(config.NormalConfigStruct{ mu: 70.0, sigma: 1.0 }) or { 70.0 }
+					src[s] << rand.normal(config.NormalConfigStruct{ mu: 70.0, sigma: 1.0 }) or {
+						70.0
+					}
 				}
 				target << f64(class)
-			} 
-            else {
+			}
+			else {
 				for _ in 0 .. num_features {
 					src[s] << 9.0
 				}
 				target << 9.0
-            }
+			}
 		}
 	}
 	mut clf := init_tree(10, 5, num_features)

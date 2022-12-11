@@ -1,6 +1,6 @@
 module main
 
-// import forest
+import forest
 import kmean
 // import knn
 import linreg
@@ -11,14 +11,14 @@ import tree
 
 fn main() {
 	println('Hello VML!')
-	//    println('Loaded: $forest.name()')
-    println('Loaded: $kmean.name()')
+	println('Loaded: $forest.name()')
+	println('Loaded: $kmean.name()')
 	//    println('Loaded: $knn.name()')
 	println('Loaded: $linreg.name()')
 	//   println('Loaded: $logreg.name()')
 	println('Loaded: $nnet.name()')
 	//    println('Loaded: $reinf.name()')
-    println('Loaded: $tree.name()')
+	println('Loaded: $tree.name()')
 
 	lrr := linreg.demo()
 	println('RUN: linreg: $lrr')
@@ -28,5 +28,7 @@ fn main() {
 	println('RUN: neural net: $nnd')
 	dtd := tree.demo()
 	println('RUN: decision tree: $dtd')
+	rfd := forest.demo()
+	println('RUN: random forest: $rfd')
 	println('DONE')
 }
