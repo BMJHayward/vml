@@ -47,5 +47,12 @@ fn (mut rf RandomForest) predict(x [][]f64) []f64 {
 }
 
 pub fn demo() RandomForest {
-	return RandomForest{}
+    mut clf := RandomForest{
+        3,
+        []tree.DecisionTree{len: 3},
+        20,
+        10,
+        12
+        }
+	return clf
 }
