@@ -37,7 +37,7 @@ fn entropy<T>(y []T) f64 {
 	return arrays.sum(logits) or { panic('failed to sum array') }
 }
 
-fn accuracy(y_true []f64, y_pred []f64) f64 {
+pub fn accuracy(y_true []f64, y_pred []f64) f64 {
 	mut acc := 0.0
 	for t in 0 .. math.min(y_true.len, y_pred.len) {
 		if y_true[t] == y_pred[t] {
