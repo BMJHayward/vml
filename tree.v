@@ -9,7 +9,7 @@ pub fn name() string {
 	return 'decision tree'
 }
 
-fn most_common<T>(y []T) T {
+pub fn most_common<T>(y []T) T {
 	mut max_count := 0
 	mut most_frequent := 0
 	for i in 0 .. y.len {

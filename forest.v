@@ -16,7 +16,7 @@ mut:
 	n_feats           int
 }
 
-pub fn init_forest(n_trees int, trees []tree.DecisionTree, min_samples_split int, max_depth int, n_feats int) DecisionTree {
+pub fn init_forest(n_trees int, trees []tree.DecisionTree, min_samples_split int, max_depth int, n_feats int) RandomForest {
 	return RandomForest{n_trees, trees, min_samples_split, max_depth, n_feats}
 }
 
@@ -36,7 +36,13 @@ fn (mut rf RandomForest) fit(x [][]f64, y []f64, n_samples int, bootstrap bool) 
 	}
 }
 
-fn (rf RandomForest) predict(x [][]f64) []f64 {
+fn (mut rf RandomForest) predict(x [][]f64) []f64 {
+    mut tpreds := [][]f64{}
+    for t in 0 .. rf.trees.len {
+        tpreds << rf.trees[t].predict(x)
+    }
+    mut ypreds := []f64{}
+    ypreds << tpreds.map(tree.most_common(it))
 	return []f64{}
 }
 
