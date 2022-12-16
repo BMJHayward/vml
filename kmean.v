@@ -94,7 +94,7 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 			panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
 		}
 		for idx, iv in inp {
-			mut pr := []f64{len: 2}
+			mut pr := []f64{}
 			pr = [iv, output[idx]]
 			mut dts := centroids.map(point_distance(it, pr))
 			midx := arrays.idx_min(dts) or { pairs.len - 1 } // drop in junk if failed
@@ -103,7 +103,7 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 		for cdx, cntr in centroids {
 			// get average of the cluster and update the centroid
 			mut newcntr := arrays.reduce(pairs[cdx], fn (acc_pt []f64, next_pt []f64) []f64 {
-				mut tt := []f64{len: 2}
+				mut tt := []f64{}
 				tt = [(acc_pt[0] + next_pt[0]) / 2, (acc_pt[1] + next_pt[1]) / 2]
 				return tt
 			}) or { cntr }
