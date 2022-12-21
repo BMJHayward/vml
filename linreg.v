@@ -10,7 +10,7 @@ pub fn name() string {
 }
 
 fn sum<T>(a ...T) T {
-	mut total := 0.0
+	mut total := T(0)
 	for x in a {
 		total += x
 	}
@@ -18,21 +18,24 @@ fn sum<T>(a ...T) T {
 }
 
 fn vecdot<T>(uu []T, vv []T) []T {
-	mut ww := []T{len: uu.len}
-	// for i, u in uu {
+	mut ww := []T{}
 	for i := 0; i < uu.len; i++ {
 		ww << uu[i] * vv[i]
 	}
 	return ww
 }
 
-fn estimate_coefficients<T>(x []T, y []T) []T {
+fn estimate_coefficients<T>(input []T, output []T) []f64 {
+	// need to use floats for mean, division and dot products
+	x := input.map(f64(it))
+	y := output.map(f64(it))
+
 	// number of observations/points
 	n := x.len
 
 	// mean of x and y vector
-	xmean := stats.mean(x)
-	ymean := stats.mean(y)
+	xmean := stats.mean(x.map(f64(it)))
+	ymean := stats.mean(y.map(f64(it)))
 
 	// calculating cross-deviation and deviation about x
 	ss_xy := sum(...vecdot(y, x)) - n * ymean * xmean
