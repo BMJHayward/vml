@@ -3,7 +3,7 @@ module linreg
 import math
 import math.stats
 import rand
-// import vsl.plot
+import rand.config
 
 pub fn name() string {
 	return 'linear regression'
@@ -56,7 +56,7 @@ struct LinearModel {
 Train and predict will make a common API amongst as many model types as possible
 */
 pub fn (m LinearModel) train<T>(inputs [][]T, output []T) []LinearModel {
-	mut lm := []LinearModel{len: inputs.len}
+	mut lm := []LinearModel{}
 	for inp in inputs {
 		lm << LinearModel{
 			coeffs: estimate_coefficients(inp, output)
@@ -66,7 +66,7 @@ pub fn (m LinearModel) train<T>(inputs [][]T, output []T) []LinearModel {
 }
 
 pub fn (m LinearModel) predict<T>(data []T) []T {
-	println('DATA: $data')
+	return data.map(m.coeffs[1] * it + m.coeffs[0])
 }
 
 pub fn demo() []LinearModel {
@@ -78,10 +78,15 @@ pub fn demo() []LinearModel {
 		test_x2 << f64(2 * i)
 		test_y << 3 * (i + rand.int_in_range(-1, 1) or { 0 })
 	}
-	// test_reg_coeffs := estimate_coefficients(test_x1, test_y)
 	lm_runner := LinearModel{
 		coeffs: []
 	}
 	linear_model := lm_runner.train([test_x1, test_x2], test_y)
+	mut pred_data := []f64{len: 100}.map(rand.normal(config.NormalConfigStruct{ mu: 50.0, sigma: 1.0 }) or { 50.0 })
+	for lm in linear_model {
+		mut preds := lm.predict(pred_data)
+		println('linearmodel predictions')
+		println(preds[..10])
+	}
 	return linear_model
 }
