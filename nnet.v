@@ -18,8 +18,8 @@ pub struct NeuralNetModel {
 mut:
 	shape      []int
 	layers     []string
-	activation ActFunc
-	error      ErrorFunc
+	activation ActFunc @[required]
+	error      ErrorFunc @[required]
 	backprop   bool
 }
 
@@ -39,8 +39,8 @@ mut:
 	inputs     int
 	neurons    int
 	learn_rate f64
-	act        ActFunc
-	act_d      ActFunc
+	act        ActFunc @[required]
+	act_d      ActFunc @[required]
 	prev_layer [][]f64
 	z          [][]f64 // the dot prod of weights and prev layer Z
 	a          [][]f64 // result of activation func on a

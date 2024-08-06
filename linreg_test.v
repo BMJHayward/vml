@@ -38,12 +38,19 @@ fn test_train() {
 }
 
 fn  test_predict() {
+
     test_model := linreg.LinearModel{
         coeffs: [2.0, 2.0]
     }
     test_data := [1.0, 2.0, 3.0, 4.0, 5.0]
     test_preds := test_model.predict(test_data)
     assert test_preds == [4.0, 6.0, 8.0, 10.0, 12.0]
+
+    inputs := [[1,2,3], [4,5,6], [7,8,9]]
+    outputs := [11, 12, 13]
+    linreg.train(inputs, outpus)
+    assert 'test_predict' == 'test_predict'
+
 }
 
 fn test_demo() {

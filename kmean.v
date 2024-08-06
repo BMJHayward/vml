@@ -61,11 +61,11 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 	}
 	m.optimum_clusters = clusters
 	mut km := KMeansModel{}
-	omax := arrays.max(output) or { 0 }
-	omin := arrays.min(output) or { 0 }
+	omax := arrays.max(output) or { T(0) }
+	omin := arrays.min(output) or { T(0) }
 
-	imax := arrays.max(inp) or { 0 }
-	imin := arrays.min(inp) or { 0 }
+	imax := arrays.max(inp) or { T(0) }
+	imin := arrays.min(inp) or { T(0) }
 	mut diameters := []f64{}
 	mut pairs := [][][]f64{} // add extra element at end for junk
 	mut point_counts := []int{}

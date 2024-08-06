@@ -28,13 +28,13 @@ fn (mut rf RandomForest) fit(x [][]f64, y []f64) {
 		sample_list << s
 	}
 	for _ in 0 .. rf.n_trees {
-		mut tree := tree.init_tree(rf.min_samples_split, rf.max_depth, rf.n_feats)
+		mut new_tree := tree.init_tree(rf.min_samples_split, rf.max_depth, rf.n_feats)
 		// sample x and y
 		mut idxs := rand.choose(sample_list, n_samples) or {
 			panic('could not choose random sample')
 		}
-		tree.fit(idxs.map(x[it]), idxs.map(y[it])) or { panic('failed to fit tree') }
-		rf.trees << tree
+		new_tree.fit(idxs.map(x[it]), idxs.map(y[it])) or { panic('failed to fit tree') }
+		rf.trees << new_tree
 	}
 }
 

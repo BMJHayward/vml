@@ -11,7 +11,7 @@ pub fn name() string {
 
 pub fn most_common<T>(y []T) T {
 	mut max_count := 0
-	mut most_frequent := 0
+	mut most_frequent := T(0)
 	for i in 0 .. y.len {
 		mut count := 0
 		for j in 0 .. y.len {

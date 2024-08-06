@@ -1,6 +1,5 @@
 module linreg
 
-import math
 import math.stats
 import rand
 import rand.config
