@@ -56,11 +56,18 @@ Train and predict will make a common API amongst as many model types as possible
 */
 pub fn (m LinearModel) train<T>(inputs [][]T, output []T) []LinearModel {
 	mut lm := []LinearModel{}
+	mut coeff_threads := []thread []f64{}
 	for inp in inputs {
+      coeff_threads << spawn estimate_coefficients(inp, output)
+	}
+	finished_coeffs := coeff_threads.wait()
+
+	for coeff in finished_coeffs {
 		lm << LinearModel{
-			coeffs: estimate_coefficients(inp, output)
+			coeffs: coeff
 		}
 	}
+	
 	return lm
 }
 

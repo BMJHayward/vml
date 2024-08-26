@@ -70,6 +70,7 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 	mut pairs := [][][]f64{} // add extra element at end for junk
 	mut point_counts := []int{}
 	mut centroids := [][]f64{}
+
 	match m.centroids.len {
 		0 {
 			centroids = [][]f64{}
@@ -84,15 +85,20 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 			centroids = m.centroids.clone()
 		}
 	}
+
+	// TODO: multithread this bit
 	for phase in 0 .. iterations {
 		diameters.clear()
 		pairs.clear()
+		// TODO: use threads here?
 		for i := 0; i < centroids.len; i++ {
 			pairs << [][]f64{}
 		}
 		if phase < 0 {
 			panic('cant iterate negative numbers. fix arg <iterations> in kmean.train')
 		}
+
+		// TODO: use threads here?
 		for idx, iv in inp {
 			mut pr := []f64{}
 			pr = [iv, output[idx]]
@@ -100,6 +106,8 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 			midx := arrays.idx_min(dts) or { pairs.len - 1 } // drop in junk if failed
 			pairs[midx].prepend(pr)
 		}
+
+		// TODO: use threads here?
 		for cdx, cntr in centroids {
 			// get average of the cluster and update the centroid
 			mut newcntr := arrays.reduce(pairs[cdx], fn (acc_pt []f64, next_pt []f64) []f64 {
@@ -109,6 +117,8 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 			}) or { cntr }
 			centroids[cdx] = newcntr
 		}
+
+        // TODO: use threads here?
 		// calculate distortion for each cluster
 		for pdx in 0 .. centroids.len {
 			mut dists := pairs[pdx].map(point_distance(it, centroids[pdx]))
@@ -117,10 +127,14 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 			}) or { 0 }
 		}
 	}
+
 	point_counts << pairs.map(it.len)
+
+	// TODO: use threads here?
 	for pc in 0 .. arrays.min([point_counts.len, m.point_count.len]) or { centroids.len } {
 		point_counts[pc] += m.point_count[pc]
 	}
+
 	km = KMeansModel{
 		optimum_clusters: int(clusters)
 		centroids: centroids
@@ -153,7 +167,7 @@ pub fn demo() ![]KMeansModel {
 	mut valx := []f64{}
 	mut valy := []f64{}
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		tx0 := rand.normal(config.NormalConfigStruct{ mu: 50, sigma: 1.0 }) or { 50.0 }
 		tx1, ty1 := rand.normal_pair(config.NormalConfigStruct{ mu: 25, sigma: 1.0 }) or {
 			25.0, 25.0
