@@ -48,17 +48,20 @@ fn main() {
             nnd := nnet.demo()
             println('RUN: neural net: $nnd')
         }
+        'all' {
+            lrr := linreg.demo()
+            println('RUN: linreg: $lrr')
+            kmr := kmean.demo() or { []kmean.KMeansModel{} }
+            println('RUN: kmeans: $kmr')
+            nnd := nnet.demo()
+            println('RUN: neural net: $nnd')
+            dtd := tree.demo()
+            println('RUN: decision tree: $dtd')
+            rfd := forest.demo()
+            println('RUN: random forest: $rfd')
+        }
         else {
-        lrr := linreg.demo()
-        println('RUN: linreg: $lrr')
-        kmr := kmean.demo() or { []kmean.KMeansModel{} }
-        println('RUN: kmeans: $kmr')
-        nnd := nnet.demo()
-        println('RUN: neural net: $nnd')
-        dtd := tree.demo()
-        println('RUN: decision tree: $dtd')
-        rfd := forest.demo()
-        println('RUN: random forest: $rfd')
+            println(fp.usage());
         }
     }
     println('DONE')
