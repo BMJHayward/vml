@@ -19,7 +19,7 @@ fn main() {
     fp.skip_executable()
 
     model := fp.string('model', `m`, 'none', 'The model to analyse your data.').to_lower()
-    demo := fp.string('demo', `e`, 'none', 'Demonstrate model training and output on fake data.').to_lower()
+    // demo := fp.string('demo', `e`, 'none', 'Demonstrate model training and output on fake data.').to_lower()
     data := fp.string('data', `d`, 'none', 'Input data as csv file.').to_lower()
     additional_args := fp.finalize() !
 
@@ -27,8 +27,12 @@ fn main() {
         println('Unprocessed arguments:\n$additional_args.join_lines()')
     }
 
+    if data != 'none' {
+        println(data)
+    }
+
     match model {
-        'linreg ' {
+        'linreg' {
             lrr := linreg.demo()
             println('RUN: linreg: $lrr')
         }
@@ -61,6 +65,8 @@ fn main() {
             println('RUN: random forest: $rfd')
         }
         else {
+            println('ERROR: unknown model')
+            println('options are: linreg, tree, forest, kmeans, nnet, all')
             println(fp.usage());
         }
     }
