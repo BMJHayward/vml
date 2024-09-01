@@ -117,6 +117,29 @@ pub fn (mut m KMeansModel) train<T>(inp []T, output []T, iterations int, cluster
 			}) or { cntr }
 			centroids[cdx] = newcntr
 		}
+		arrays.each_indexed(centroids, fn (cdx int, cntr []f64) []f64 {
+			// get average of the cluster and update the centroid
+			mut newcntr := pairs[cdx][0]
+			pairs[cdx].each_indexed(fn (idx int, pt []f64) []f64 {
+				newcntr[idx] = (newcntr[idx] + pt[idx]) / 2
+			})
+			centroids[cdx] = newcntr or { cntr }
+		})
+
+		// TODO: spawn threads on this func, update centroids after wait
+		pub fn updateCenters<T>(pairs [][]T, centroidCount int) [][]T) {
+			for c in 0 .. centroidCount {
+				mut newcntr := pairs
+				pairs[c].each_indexed(fn (idx int, pt []T) []T {
+					newcntr[idx] = (newcntr[idx] + pt[idx]) / 2
+				})
+				return newcntr or { cntr }
+			}
+		}
+
+
+
+
 
         // TODO: use threads here?
 		// calculate distortion for each cluster
