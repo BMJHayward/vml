@@ -1,15 +1,18 @@
 module main
 
+// import kmean
+// import knn
 // import knn
 // import logreg
 // import reinf
+import flag
 import forest
+import kmean
 import kmean
 import linreg
 import nnet
-import tree
 import os
-import flag
+import tree
 
 fn main() {
     mut fp := flag.new_flag_parser(os.args)

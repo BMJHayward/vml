@@ -7,3 +7,8 @@ vml
 *.dylib
 *.dll
 vls.log
+
+cmake-build-debug
+.idea
+.vscode
+scrap
